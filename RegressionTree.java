@@ -365,7 +365,8 @@ public class RegressionTree
 	   for (int ndataindex = 0; ndataindex < datalocations.length; ndataindex++)
 	   {
 	       //converts the x-feature value to an object
-	      Float objd = new Float(data_nfeature[ndataindex]);
+	       //Float objd = new Float(data_nfeature[ndataindex]);
+	      Float objd = Float.valueOf(data_nfeature[ndataindex]);
 
 	      //gets the tally associated with this x-feature
 	      RecYtally theRec = (RecYtally) hmtallysum.get(objd);
@@ -403,12 +404,14 @@ public class RegressionTree
 
 	   for (int ni = 0; ni < xvals_nfeature.length; ni++)
 	   {
-	      Float objd = new Float(xvals_nfeature[ni]);
+	       //Float objd = new Float(xvals_nfeature[ni]);
+	      Float objd = Float.valueOf(xvals_nfeature[ni]);
 	      RecYtally theRec = (RecYtally) hmtallysum.get(objd);
 
 	      xvaluescount_nfeature[ni] = theRec.ntally;
 	      yvaluessum_nfeature[ni] = theRec.dysum;
-	      hmdatatoindex_nfeature.put(new Float(xvals_nfeature[ni]), Integer.valueOf(ni));
+	      //hmdatatoindex_nfeature.put(new Float(xvals_nfeature[ni]), Integer.valueOf(ni));
+	      hmdatatoindex_nfeature.put(Float.valueOf(xvals_nfeature[ni]), Integer.valueOf(ni));
 	   }	   
 	}
     }
@@ -666,7 +669,8 @@ public class RegressionTree
 		       {
 			   //updating the left side xvalues and y-sum for including this value on the left side
 			  float fval = data[nfeature][nmappedindex]; //gets the actual value for the feature
-		          int ndataxvalindex = ((Integer) hmdatatoindex[nfeature].get(new Float(fval))).intValue();
+		          //int ndataxvalindex = ((Integer) hmdatatoindex[nfeature].get(new Float(fval))).intValue();
+		          int ndataxvalindex = ((Integer) hmdatatoindex[nfeature].get(Float.valueOf(fval))).intValue();
 			  //updating count of how often to the left side we have this feature value
 		          xvaluescountleft[nfeature][ndataxvalindex]++;
 			  //updating corresponding sum of y for this feature value
@@ -761,7 +765,8 @@ public class RegressionTree
 		      for (int nfeature = 0; nfeature < numfeatures; nfeature++)
 		      {
 		         float fval = data[nfeature][nmappedindex];
-		         int ndataxvalindex = ((Integer) hmdatatoindex[nfeature].get(new Float(fval))).intValue();
+		         //int ndataxvalindex = ((Integer) hmdatatoindex[nfeature].get(new Float(fval))).intValue();
+		         int ndataxvalindex = ((Integer) hmdatatoindex[nfeature].get(Float.valueOf(fval))).intValue();
 		         xvaluescountright[nfeature][ndataxvalindex]++;
 		         yvaluessumright[nfeature][ndataxvalindex] += output_nmappedindex;			 
 		      }

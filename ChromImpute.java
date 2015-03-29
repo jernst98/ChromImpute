@@ -563,7 +563,7 @@ public class ChromImpute
 
     boolean bmethylavggenome = false;
 
-    boolean bmethylavgchrom = false;
+    //boolean bmethylavgchrom = false;
 
     boolean btieglobal = false;
 
@@ -689,6 +689,17 @@ public class ChromImpute
 
         loadChromInfo(); //reads file with the length info for each chromosome
         loadImputeInfo(); //reads information on data to impute file from
+
+	if ((szoutcell != null) && (!hscells.contains(szoutcell)))
+	{
+	    throw new IllegalArgumentException("Sample "+szoutcell+" was not defined in the sample mark table.");
+	}
+
+        if ((szoutmark != null) && (!hsmarks.contains(szoutmark)))
+	{
+       	    throw new IllegalArgumentException("Mark "+szoutmark+" was not defined in the sample mark table.");
+	}
+
 	computeGlobalCorrelations();
     }
 
@@ -719,11 +730,17 @@ public class ChromImpute
 	this.nmaxknn = nmaxknn;
 	this.bdnamethyl = bdnamethyl;
 	this.bmethylavggenome = bmethylavggenome;
-	this.bmethylavgchrom = bmethylavgchrom;
+	//this.bmethylavgchrom = bmethylavgchrom;
 	this.btieglobal = btieglobal;
 
 	if ((!bmethylavggenome)&&(!bmethylavgchrom))
 	{
+	    if (szchromwant == null)
+	    {
+                this.bmethylavggenome = true;
+	    }
+
+	    /*
 	    if (szchromwant != null)
 	    {
 		this.bmethylavgchrom = true;
@@ -732,6 +749,7 @@ public class ChromImpute
 	    {
 		this.bmethylavggenome = true;
 	    }
+	    */
 	}
 
 	//this.numbags = numbags;
@@ -797,15 +815,26 @@ public class ChromImpute
 	loadChromInfo();
 	loadImputeInfo();
 
+	if (!hscells.contains(szoutcell))
+	{
+	    throw new IllegalArgumentException("Sample "+szoutcell+" was not defined in the sample mark table.");
+	}
+
+        if ((!hsmarks.contains(szoutmark))&&(!bdnamethyl))
+	{
+       	    throw new IllegalArgumentException("Mark "+szoutmark+" was not defined in the sample mark table.");
+	}
+
 
 	if (bdnamethyl)
 	{
-	    this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(numdnamethylcells-1)));
+	    this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(double)numdnamethylcells));
 	}
 	else
 	{
 	    ArrayList alcells = (ArrayList) hmmarkcell.get(szoutmark);
-	    this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/alcells.size()));
+	    this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(double)alcells.size()));
+	    //fixed to update numbags count to subtract
 	    //System.out.println("numbags is "+this.numbags+" "+nmintotalensemble+" "+alcells.size());
 	}
 
@@ -884,24 +913,32 @@ public class ChromImpute
         loadImputeInfo();
         //loadTargets();
         //loadDistInfo();
+	if (!hscells.contains(szoutcell))
+	{
+	    throw new IllegalArgumentException("Sample "+szoutcell+" was not defined in the sample mark table.");
+	}
 
+        if ((!hsmarks.contains(szoutmark))&&(!bdnamethyl))
+	{
+       	    throw new IllegalArgumentException("Mark "+szoutmark+" was not defined in the sample mark table.");
+	}
 
 
 	if (bdnamethyl)
 	{
-	    this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(numdnamethylcells-1)));
+	    this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(double) numdnamethylcells));
 	}
 	else
 	{
 	    ArrayList alcells = (ArrayList) hmmarkcell.get(szoutmark);
-	    if ((alcells == null) || (alcells.size() == 1))
-	    {
-		this.numbags = numbags;
-	    }
-	    else
-	    {
-	       this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(alcells.size()-1)));
-	    }
+	    //if ((alcells == null) || (alcells.size() == 1))  //removed in v0.9.6
+	    //{
+	    //   this.numbags = numbags;
+	    //}
+	    //else
+	    //{
+		this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(double)alcells.size()));
+	    //}
 	    //System.out.println("numbags is "+this.numbags+" "+nmintotalensemble+" "+alcells.size());
 	}
 
@@ -930,11 +967,17 @@ public class ChromImpute
 
 	this.szchromwantgenerate = szchromwantgenerate;
         this.bmethylavggenome = bmethylavggenome;
-        this.bmethylavgchrom = bmethylavgchrom;
+        //this.bmethylavgchrom = bmethylavgchrom;
 	this.btieglobal = btieglobal;
 
 	if ((!bmethylavggenome)&&(!bmethylavgchrom))
 	{
+	    if (szchromwantgenerate == null)
+	    {
+                this.bmethylavggenome = true;
+	    }
+
+	    /*
 	    if (szchromwantgenerate != null)
 	    {
 		this.bmethylavgchrom = true;
@@ -943,6 +986,7 @@ public class ChromImpute
 	    {
 		this.bmethylavggenome = true;
 	    }
+	    */
 	}
 
 	this.szchrominfo = szchrominfo;
@@ -1011,14 +1055,19 @@ public class ChromImpute
 
         loadImputeInfo();
 
+        if ((!hsmarks.contains(szoutmark))&&(!bdnamethyl))
+	{
+       	    throw new IllegalArgumentException("Mark "+szoutmark+" was not defined in the sample mark table.");
+	}
+
 	if (bdnamethyl)
 	{
-	    this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(numdnamethylcells-1)));
+	    this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(double) numdnamethylcells));
 	}
 	else
 	{
  	   ArrayList alcells = (ArrayList) hmmarkcell.get(szoutmark);
-	   this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(alcells.size()-1)));
+	   this.numbags = (int) Math.max(numbags, Math.ceil(nmintotalensemble/(double) alcells.size()));
 	   //System.out.println("numbags is "+this.numbags+" "+nmintotalensemble+" "+alcells.size());
 	}
 
@@ -1058,6 +1107,18 @@ public class ChromImpute
        }
        loadChromInfo(); //reads file with the length info for each chromosome
        loadImputeInfo(); //reads information on data to impute file from
+
+
+       if ((szconvertcell != null) && (!hscells.contains(szconvertcell)))
+       {
+           throw new IllegalArgumentException("Sample "+szconvertcell+" was not defined in the sample mark table.");
+       }
+
+       if ((szconvertmark != null) && (!hsmarks.contains(szconvertmark)))
+       {
+      	   throw new IllegalArgumentException("Mark "+szconvertmark+" was not defined in the sample mark table.");
+       }
+
        convertData(); //converts data into desired format
     }
 
@@ -1071,7 +1132,7 @@ public class ChromImpute
     {
 	  BufferedReader brheaderfile = Util.getBufferedReader(szmethylheader);
 	  String szLine = brheaderfile.readLine();
-          StringTokenizer st = new StringTokenizer(szLine,"\t ");
+          StringTokenizer st = new StringTokenizer(szLine,"\t");
           numdnamethylcells = st.countTokens()-1; //first column is position
 
 	  dnamethylheader = new String[numdnamethylcells];
@@ -1110,6 +1171,7 @@ public class ChromImpute
        while ((szLine = brchrom.readLine())!=null)
        {
           StringTokenizer st = new StringTokenizer(szLine,"\t");
+	  if (st.countTokens() == 0) continue;
 	  String szchrom = st.nextToken();
 
 	  alchromALL.add(szchrom);
@@ -1144,7 +1206,7 @@ public class ChromImpute
        {
 
 
-	  int numchrom = nindex;
+	   //int numchrom = nindex;
 	  //System.out.println("numchrom is "+numchrom);
 	  //BufferedReader brheaderfile = Util.getBufferedReader(szmethylheader);
 	  //szLine = brheaderfile.readLine();
@@ -1162,10 +1224,14 @@ public class ChromImpute
 
 	  hmchromdnamethylfile = new HashMap();
 	  StringTokenizer st;
+	  ArrayList alchromdnamethylinfo = new ArrayList();
           while ((szLine = brdnamethylinfo.readLine())!=null)
           {
 	     st = new StringTokenizer(szLine,"\t");
+	     if (st.countTokens() == 0) 
+		 continue;
 	     String szchrom = st.nextToken();
+	     alchromdnamethylinfo.add(szchrom);
 	     String szfile = st.nextToken();
              hmchromdnamethylfile.put(szchrom, szfile);
           }
@@ -1184,7 +1250,9 @@ public class ChromImpute
           //for (int nchromindex = 0; nchromindex < numchrom; nchromindex++)
 	  for (int nchromindex = 0; nchromindex < alchromALL.size(); nchromindex++)
           {
-	     String szchrom = (String) alchromALL.get(nchromindex);
+	      //String szchrom = (String) alchromALL.get(nchromindex);
+	      String szchrom = (String) alchromdnamethylinfo.get(nchromindex);
+	      //String szchrom = (String) alchromdnamethyl.get(nchromindex);
 
 	     //don't need to read this file if not averaging genomewide, and only one apply chromosome selected 
 	     if ((!bmethylavggenome)&&(szchromwant != null)&&(!szchromwant.equals(szchrom)))
@@ -1192,7 +1260,10 @@ public class ChromImpute
 
 	     String szfile = (String) hmchromdnamethylfile.get(szchrom);
 
-
+	     if (szfile == null)
+	     {
+		 throw new IllegalArgumentException("Chromosome "+szchrom+" not found in DNA methylation info file "+szmethylinfo);
+	     }
 	     //System.out.println("opening "+szmethylDIR+"/"+szfile);
 	     //System.out.println("expecting "+methylavg.length+" columns");
 	     BufferedReader brdnamethyldata = Util.getBufferedReader(szmethylDIR+"/"+szfile);
@@ -1200,13 +1271,14 @@ public class ChromImpute
 	     int nchromsize = 0;
 	     if (szchromwant == null)
 	     {
+		 //always go here when training 
 		 //getting this as long as not applying to specific chromosome
-	        Integer intobjchromsize = (Integer) hmchromsize.get(szchrom);
-	        if ((intobjchromsize == null) && (szchromwant != null))
-	        {
+		Integer intobjchromsize = (Integer) hmchromsize.get(szchrom);
+	        //if (intobjchromsize == null) //updated in v0.9.6 to remove this as wan't doing anything && (szchromwant != null))
+	        //{
 		 //don't need chromosome size 
-                   throw new IllegalArgumentException("Chromosome "+szchrom+" found in DNA methylation file but not present in "+szchrominfo); 
-		}
+		 //   throw new IllegalArgumentException("Chromosome "+szchrom+" found in DNA methylation file but not present in "+szchrominfo); 
+		//}
                 nchromsize = ((Integer) intobjchromsize).intValue();
 	     }
 
@@ -1554,7 +1626,7 @@ public class ChromImpute
       }
    }
 
-   static class TrainFileRecCompare implements Comparator
+    static class TrainFileRecCompare implements Comparator, Serializable
    {
 
       public int compare(Object o1, Object o2)
@@ -1907,6 +1979,10 @@ public class ChromImpute
 
        loadClassifiers();
        
+       if (numclassifiers == 0)
+       {
+	   throw new IllegalArgumentException("No previously trained classifiers for mark "+szoutmark+" were found available to load!");
+       }
 
        //System.out.println("Target marks");
        int[] markstargetcellA = new int[almarkstargetcell.size()];
@@ -2002,8 +2078,12 @@ public class ChromImpute
           {
 
 	     String szfile = (String) hmchromdnamethylfile.get(szchrom);
+	     if (szfile == null)
+	     {
+		 throw new IllegalArgumentException("Chromosome "+szchrom+" was not found in the DNA methylation info file");
+	     }
 	     BufferedReader brdnamethyldata = Util.getBufferedReader(szmethylDIR+"/"+szfile); //assumes methylation data in separate files
-             int intobjchromsize = (Integer) hmchromsize.get(szchrom);
+             //int intobjchromsize = (Integer) hmchromsize.get(szchrom);
              String szLine;
 
 	     almethylvals = new ArrayList();
@@ -2290,10 +2370,17 @@ public class ChromImpute
        while ((szLine = brimputeinfo.readLine())!=null)
        {
           StringTokenizer st = new StringTokenizer(szLine,"\t");
-
-	  //reading cell anr mark in the file
+	  if (st.countTokens() == 0) continue;
+	  //reading cell and mark in the file
 	  String szcell = st.nextToken();
 	  String szmark = st.nextToken();
+
+	  if (szmark.startsWith("OrderNarrow_"))
+	      throw new IllegalArgumentException("Mark "+szmark+" name starts with 'OrderNarrow_' which is a reserved prefix, please change the mark name.");          
+          if (szmark.startsWith("OrderGlobal_"))
+	     throw new IllegalArgumentException("Mark "+szmark+" name starts with 'OrderGlobal_' which is a reserved prefix, please change the mark name.");
+	  if (szmark.contains("_by_"))
+	      throw new IllegalArgumentException("Mark "+szmark+" contains '_by_' which is a reserved substring, please change the mark name.");
 
 	  //skips an entry if szpioneermark is not null
 	  //hspioneer does not contains the mark
@@ -2536,7 +2623,7 @@ public class ChromImpute
 	        int nmaxPARAM = Math.max(nknnoffset, nmaxoffsetwide);
                 int n2nmaxoffset = 2*nmaxPARAM;
 
-	        int nchromsize = (((Integer) hmchromsize.get(chroms[nchrom])).intValue()-1)/nresolution+1;
+	        //int nchromsize = (((Integer) hmchromsize.get(chroms[nchrom])).intValue()-1)/nresolution+1;
 
 	        for (int nholdoutcell = 0; nholdoutcell < numcells; nholdoutcell++)
 	        {
@@ -3271,7 +3358,7 @@ public class ChromImpute
       }
    }
 
-   static class RecMaxCompare implements Comparator
+    static class RecMaxCompare implements Comparator, Serializable
    {
 
       public int compare(Object o1, Object o2)
@@ -3337,15 +3424,18 @@ public class ChromImpute
            {
 	       double dval = Double.parseDouble(szLine);
 
-	       Integer intcount = (Integer) hmtally.get(new Double(dval));
+	       //Integer intcount = (Integer) hmtally.get(new Double(dval));
+	       Integer intcount = (Integer) hmtally.get(Double.valueOf(dval));
 
 	       if (intcount == null)
 	       {
-		   hmtally.put(new Double(dval), new Integer(1));
+		   hmtally.put(Double.valueOf(dval), Integer.valueOf(1));
+		   //hmtally.put(new Double(dval), new Integer(1));
 	       }
 	       else
 	       {
-		   hmtally.put(new Double(dval), new Integer(1+intcount.intValue()));
+		   hmtally.put(Double.valueOf(dval), Integer.valueOf(1+intcount.intValue()));
+		   //hmtally.put(new Double(dval), new Integer(1+intcount.intValue()));
 	       }
 	       nlinetotal++;
 	   }
@@ -3371,12 +3461,13 @@ public class ChromImpute
        int nmaxindex = dvals.length - 1;
        while ((nmaxindex >= 0)&&(nhits/(double) nlinetotal < devalpercent2/(double) 100))
        {
-	   nhits += ((Integer) hmtally.get(new Double(dvals[nmaxindex]))).intValue();
+	   //nhits += ((Integer) hmtally.get(new Double(dvals[nmaxindex]))).intValue();
+	   nhits += ((Integer) hmtally.get(Double.valueOf(dvals[nmaxindex]))).intValue();
 	   dkeepreal = dvals[nmaxindex];
 	   nmaxindex--;
        }
 
-       hmtally = new HashMap();
+       //hmtally = new HashMap();
        nlinetotal = 0;
 
 
@@ -3416,7 +3507,8 @@ public class ChromImpute
 
        for (int ni = 0; ni < numtop1; ni++)
        {
-	  hsMax.add(new Integer(alMax[ni].nline));
+	  hsMax.add(Integer.valueOf(alMax[ni].nline));
+	  //hsMax.add(new Integer(alMax[ni].nline));
        }
 
 
@@ -3475,7 +3567,8 @@ public class ChromImpute
 	     }
 
 	     theROCRec.ntotal++;
-	     if (hsMax.contains(new Integer(nlinereal)))
+	     //if (hsMax.contains(new Integer(nlinereal)))
+	     if (hsMax.contains(Integer.valueOf(nlinereal)))
              {
 		 theROCRec.nhit++;
 	     }
@@ -3520,7 +3613,8 @@ public class ChromImpute
 		}
 
 		theROCRec.ntotal++;
-	        if (hsMax.contains(new Integer(nlinereal)))
+	        //if (hsMax.contains(new Integer(nlinereal)))
+	        if (hsMax.contains(Integer.valueOf(nlinereal)))
 	        {
 		    theROCRec.nhit++;
 		    //(dval2 >= dkeepimpute)
@@ -3559,7 +3653,7 @@ public class ChromImpute
 	   double dfprate = nfp/(double) ntotalfalse;
 	   double dtprate = ntp/(double) numtop1;
 
-	   //System.out.println(keys[nindex]+"\t"+nf4.format(dfprate)+"\t"+nf4.format(dtprate)+"\t"+((ntp+nfp)/(double)(numtop1+ntotalfalse)));
+	   System.out.println(keys[nindex]+"\t"+nf4.format(dfprate)+"\t"+nf4.format(dtprate)+"\t"+((ntp+nfp)/(double)(numtop1+ntotalfalse)));
        }
 
     }
@@ -3785,15 +3879,18 @@ public class ChromImpute
            {
 	       double dval = Double.parseDouble(szLine);
 
-	       Integer intcount = (Integer) hmtally.get(new Double(dval));
+	       //Integer intcount = (Integer) hmtally.get(new Double(dval));
+	       Integer intcount = (Integer) hmtally.get(Double.valueOf(dval));
 
 	       if (intcount == null)
 	       {
-		   hmtally.put(new Double(dval), new Integer(1));
+		   //hmtally.put(new Double(dval), new Integer(1));
+		   hmtally.put(Double.valueOf(dval), Integer.valueOf(1));
 	       }
 	       else
 	       {
-		   hmtally.put(new Double(dval), new Integer(1+intcount.intValue()));
+		   //hmtally.put(new Double(dval), new Integer(1+intcount.intValue()));
+		   hmtally.put(Double.valueOf(dval), Integer.valueOf(1+intcount.intValue()));
 	       }
 	       nlinetotal++;
 	   }
@@ -3817,7 +3914,8 @@ public class ChromImpute
        int nmaxindex = dvals.length - 1;
        while ((nmaxindex >= 0)&&(nhits/(double) nlinetotal < devalpercent2/(double) 100))
        {
-	   nhits += ((Integer) hmtally.get(new Double(dvals[nmaxindex]))).intValue();
+	   //nhits += ((Integer) hmtally.get(new Double(dvals[nmaxindex]))).intValue();
+	   nhits += ((Integer) hmtally.get(Double.valueOf(dvals[nmaxindex]))).intValue();
 	   dkeepreal = dvals[nmaxindex];
 	   nmaxindex--;
        }
@@ -3848,15 +3946,18 @@ public class ChromImpute
 
 	     double dval = Double.parseDouble(szLine);
 
-	     Integer intcount = (Integer) hmtally.get(new Double(dval));
+	     //Integer intcount = (Integer) hmtally.get(new Double(dval));
+	     Integer intcount = (Integer) hmtally.get(Double.valueOf(dval));
 
              if (intcount == null)
              {
-                hmtally.put(new Double(dval), new Integer(1));
+		 //hmtally.put(new Double(dval), new Integer(1));
+                hmtally.put(Double.valueOf(dval), Integer.valueOf(1));
 	     }
 	     else
              {
-                hmtally.put(new Double(dval), new Integer(1+intcount.intValue()));
+		 //hmtally.put(new Double(dval), new Integer(1+intcount.intValue()));
+		 hmtally.put(Double.valueOf(dval), Integer.valueOf(1+intcount.intValue()));
 	     }
 	     nlinetotal++;
 	  }
@@ -3882,15 +3983,18 @@ public class ChromImpute
              {
 	        double dval = Double.parseDouble(szLine);
 
-	        Integer intcount = (Integer) hmtally.get(new Double(dval));
+	        //Integer intcount = (Integer) hmtally.get(new Double(dval));
+	        Integer intcount = (Integer) hmtally.get(Double.valueOf(dval));
 
                 if (intcount == null)
                 {
-      	           hmtally.put(new Double(dval), new Integer(1));
+      	           hmtally.put(Double.valueOf(dval), Integer.valueOf(1));
+      	           //hmtally.put(new Double(dval), new Integer(1));
 		}
 	        else
                 {
-                   hmtally.put(new Double(dval), new Integer(1+intcount.intValue()));
+		    //hmtally.put(new Double(dval), new Integer(1+intcount.intValue()));
+                   hmtally.put(Double.valueOf(dval), Integer.valueOf(1+intcount.intValue()));
 		}
 	        nlinetotal++;
 	     }
@@ -3912,7 +4016,8 @@ public class ChromImpute
        nmaxindex = dvals.length - 1;
        while ((nmaxindex >= 0)&&(nhits/(double) nlinetotal < devalpercent2/(double) 100))
        {
-	   nhits += ((Integer) hmtally.get(new Double(dvals[nmaxindex]))).intValue();
+	   //nhits += ((Integer) hmtally.get(new Double(dvals[nmaxindex]))).intValue();
+	   nhits += ((Integer) hmtally.get(Double.valueOf(dvals[nmaxindex]))).intValue();
 	   dkeepimpute = dvals[nmaxindex];
 	   nmaxindex--;
        }
@@ -3962,12 +4067,14 @@ public class ChromImpute
 
        for (int ni = 0; ni < numtop1; ni++)
        {
-	  hsMax.add(new Integer(alMax[ni].nline));
+	  hsMax.add(Integer.valueOf(alMax[ni].nline));
+	  //hsMax.add(new Integer(alMax[ni].nline));
        }
 
        for (int ni = 0; ni < numtop2; ni++)
        {
-          hsMax2.add(new Integer(alMax[ni].nline));
+	   //hsMax2.add(new Integer(alMax[ni].nline));
+          hsMax2.add(Integer.valueOf(alMax[ni].nline));
        }
 
 
@@ -4043,14 +4150,12 @@ public class ChromImpute
 
        for (int ni = 0; ni < numtop1; ni++)
        {
-	  hsMaxImpute.add(new Integer(alMaxImpute[ni].nline));
+	  hsMaxImpute.add(Integer.valueOf(alMaxImpute[ni].nline));
+	  //hsMaxImpute.add(new Integer(alMaxImpute[ni].nline));
        }
 
 
-
-
-
-       al = new ArrayList();
+       //al = new ArrayList();
        nlinereal = 0;
 
        double dsumx = 0;
@@ -4113,7 +4218,8 @@ public class ChromImpute
 	     }
 
 	     theROCRecImpute.ntotal++;
-             if (hsMax.contains(new Integer(nlinereal)))
+             //if (hsMax.contains(new Integer(nlinereal)))
+             if (hsMax.contains(Integer.valueOf(nlinereal)))
              {
 	        theROCRecImpute.nhit++;
 	     }
@@ -4127,7 +4233,9 @@ public class ChromImpute
 	     }
 
              theROCRecReal.ntotal++;
-             if (hsMaxImpute.contains(new Integer(nlinereal)))
+
+             //if (hsMaxImpute.contains(new Integer(nlinereal)))
+             if (hsMaxImpute.contains(Integer.valueOf(nlinereal)))
 	     {
 	        theROCRecReal.nhit++;
 	     }
@@ -4186,7 +4294,8 @@ public class ChromImpute
 		}
 
 	        theROCRecImpute.ntotal++;
-	        if (hsMax.contains(new Integer(nlinereal)))
+	        //if (hsMax.contains(new Integer(nlinereal)))
+	        if (hsMax.contains(Integer.valueOf(nlinereal)))
                 {
 		   theROCRecImpute.nhit++;
 	        }
@@ -4200,7 +4309,8 @@ public class ChromImpute
 	        }
 
                 theROCRecReal.ntotal++;
-                if (hsMaxImpute.contains(new Integer(nlinereal)))
+                //if (hsMaxImpute.contains(new Integer(nlinereal)))
+                if (hsMaxImpute.contains(Integer.valueOf(nlinereal)))
 	        {
 	           theROCRecReal.nhit++;
 	        }
@@ -4242,7 +4352,8 @@ public class ChromImpute
        //checks if smaller imputed overlaps with smaller observed
 	for (int ni = 0; ni < numtop1; ni++)
 	{
-	   if (hsMax.contains(new Integer(alMaxImpute[ni].nline)))
+	    //if (hsMax.contains(new Integer(alMaxImpute[ni].nline)))
+	   if (hsMax.contains(Integer.valueOf(alMaxImpute[ni].nline)))
            {
        	      ntopmatchboth++;
 	   }
@@ -4251,7 +4362,8 @@ public class ChromImpute
 	//checks if larger imputed overlaps with smaller observed
 	for (int ni = 0; ni < numtop2; ni++)
 	{
-	   if (hsMax.contains(new Integer(alMaxImpute[ni].nline)))
+	    //if (hsMax.contains(new Integer(alMaxImpute[ni].nline)))
+	   if (hsMax.contains(Integer.valueOf(alMaxImpute[ni].nline)))
            {
 	      ntopmatchreal++;
 	   }
@@ -4260,7 +4372,8 @@ public class ChromImpute
 	//checks if smaller imputed overlaps greater observed
 	for (int ni = 0; ni < numtop1; ni++)
         {
-	   if (hsMax2.contains(new Integer(alMaxImpute[ni].nline)))
+	    //if (hsMax2.contains(new Integer(alMaxImpute[ni].nline)))
+	   if (hsMax2.contains(Integer.valueOf(alMaxImpute[ni].nline)))
            {
               ntopmatchimpute++;
 	   }
@@ -5065,7 +5178,7 @@ public class ChromImpute
 	       {
 		   //we are on the chromosome position we have sampled
 
-	          float[][] databinfirst_nbinindex = databinfirst[nbinindex];
+		   //float[][] databinfirst_nbinindex = databinfirst[nbinindex];
 		  //this is a position we've sampled
 		  // long ltimeyesstart = System.currentTimeMillis();
 
@@ -5337,15 +5450,33 @@ public class ChromImpute
 	{
 	    //reading attribute file
 	    //temporary change space
-           StringTokenizer st = new StringTokenizer(szLine,"\t_ ");
+           StringTokenizer st = new StringTokenizer(szLine,"\t");
+           //StringTokenizer st = new StringTokenizer(szLine,"\t_ "); //-- comment out in v0.9.6
 	   st.nextToken(); //gets rid of feature index
 	   String szorder = st.nextToken();
-           if (szorder.startsWith("Order"))
+           //if (szorder.startsWith("Order")) -- comment out in v0.9.6
+	   if  ((szorder.startsWith("OrderNarrow_"))||
+		(szorder.startsWith("OrderGlobal_")))
            {
-	      st.nextToken(); //skips output mark
-	      int nrank = Integer.parseInt(st.nextToken()); //gets rank position
-	      st.nextToken(); //skips by
-	      String szmark = st.nextToken(); //gets order by mark
+	       szorder = szorder.substring(12); //added in v0.9.6
+	       //st.nextToken(); //skips output mark //rem
+	       int nbyindex  = szorder.indexOf("_by_");
+	       StringTokenizer stu = new StringTokenizer(szorder.substring(0,nbyindex),"_");
+	       //need to prevent _by_ in mark names
+
+	       String szrank = null;
+	       while (stu.hasMoreTokens())
+	       {
+		   szrank = stu.nextToken();
+	       }
+
+	       //int nrank = Integer.parseInt(st.nextToken()); //gets rank position
+	       int nrank = Integer.parseInt(szrank);
+	       //st.nextToken(); //skips by
+	       //String szmark = st.nextToken(); //gets order by mark
+	       //String szmark = st.nextToken(); //gets order by mark
+	       String szmark = szorder.substring(nbyindex+4,szorder.length());
+
 	      if ((!szmark.equals(szprevmark))&&(!bfirst))
 	      {
 		  //were on a different order by mark saving the last rank
@@ -5385,9 +5516,22 @@ public class ChromImpute
 	      alotherfeatures.add(szLine);
 	      
 	      //temporary change space
-	      st = new StringTokenizer(szLine,"\t_ ");
+	      //st = new StringTokenizer(szLine,"\t_ "); //removed in v0.9.5
+	      st = new StringTokenizer(szLine,"\t"); //added in v0.9.6
 	      st.nextToken(); //skip index
-	      String szmarkdirect = st.nextToken();//gets
+	      String szLineAtt = st.nextToken();
+	      String szmarkdirect;
+	      if (szLineAtt.endsWith("_center"))
+	      {
+		  szmarkdirect = szLineAtt.substring(0,szLineAtt.length()-7);
+	      }
+	      else 
+	      {
+		  int nlastindex = Math.max(szLineAtt.lastIndexOf("_left_"),szLineAtt.lastIndexOf("_right_"));
+		  szmarkdirect = szLineAtt.substring(0,nlastindex);
+	      }
+
+	      //String szmarkdirect = st.nextToken();//gets
 	      //alotherfeaturesMark.add(szmarkdirect); //adds mark to the set of marks being considered
 	      if ((hstargetmarks.contains(szmarkdirect))&&(busesamecellfeatures))
 	      {
@@ -5604,7 +5748,8 @@ public class ChromImpute
 	   theTrainInstances.add(theInstance);
 
 	   //storing the output value
-	   theTrainInstancesOutput.add(new Float(st.nextToken()));
+	   theTrainInstancesOutput.add(Float.valueOf(st.nextToken()));
+	   //theTrainInstancesOutput.add(new Float(st.nextToken()));
 	   szLine = brtraindata.readLine();
 	   if ((szLine == null) && (nbrindex < brtraindataA.length))
 	   {
@@ -6203,7 +6348,7 @@ public class ChromImpute
 	   int nposleft = nbinindex - nknnoffset-1;
 	   int nposright = nbinindex + nknnoffset;
 
-	   float[][] databinfirst_nbinindex = databinfirst[nbinindex];
+	   //float[][] databinfirst_nbinindex = databinfirst[nbinindex];
 	   float[][] databinfirst_nposleft = null;
 	   float[][] databinfirst_nposright= null;
 
@@ -6633,6 +6778,7 @@ public class ChromImpute
 	      	   br = Util.getBufferedReader(szinputdir+"/"+szchromwant+"_"+szinfile);
 		}
 
+		boolean bdeclared = false;
 	        boolean bvariable = true;
 	        String szLine;
 
@@ -6640,6 +6786,7 @@ public class ChromImpute
 	        {
 	           if (szLine.startsWith("variableStep"))
 	           {
+		       bdeclared = true;
 		      StringTokenizer st = new StringTokenizer(szLine," \t=");
 		      st.nextToken();//variable
 		      st.nextToken();//chrom
@@ -6653,6 +6800,7 @@ public class ChromImpute
 		   }
 	           else if (szLine.startsWith("fixedStep"))
 	           {
+		       bdeclared = true;
 		      bvariable = false;
 		      StringTokenizer st = new StringTokenizer(szLine," \t=");
 		      st.nextToken();//fixed
@@ -6668,16 +6816,36 @@ public class ChromImpute
 	                 nspan = Integer.parseInt(st.nextToken());
 		      }
 		   }
-	           else if (!szLine.startsWith("#"))
+	           else if ((!szLine.startsWith("#"))&&(!szLine.toLowerCase(Locale.ENGLISH).startsWith("browser")))
  	           { 
+		      if (!bdeclared)
+		      {
+			  throw new IllegalArgumentException(szinfile+" is a wig file but variable or fixed not declared");
+		      }
+
 		      Integer objInt = (Integer) hmchromindex.get(szcurrchrom);
+		      StringTokenizer st = new StringTokenizer(szLine,"\t ");
+		      if (bvariable)
+		      {
+			  if (st.countTokens() != 2)
+			  {
+			      throw new IllegalArgumentException(szinfile+" is a variable step wig expecting 2 tokens but found "+st.countTokens()+" token, in line "+szLine);
+			  }
+		      }
+		      else
+		      {
+                         if (st.countTokens() != 1)
+			 {
+			     throw new IllegalArgumentException(szinfile+" is a fixed step wig expecting 1 token but found "+st.countTokens()+" token, in line "+szLine);
+			 }
+		      }
 		      if (objInt != null)
 		      {
 		         nchrom = (objInt).intValue();
 
 		         if (bvariable)
 		         {
-		            StringTokenizer st = new StringTokenizer(szLine,"\t ");
+
 		            nposition = Integer.parseInt(st.nextToken())-1;
 		            fval = Float.parseFloat(st.nextToken());
 		         }
@@ -6758,14 +6926,20 @@ public class ChromImpute
 	        String szLine;
 	        while ((szLine = br.readLine())!=null)
 	        {
-		   StringTokenizer st = new StringTokenizer(szLine,"\t");
-	           if (!szLine.startsWith("#"))
+		    StringTokenizer st = new StringTokenizer(szLine,"\t "); //added space here for delimiter in bedgraph files
+		   if ((!szLine.startsWith("#"))&&(!szLine.toLowerCase(Locale.ENGLISH).startsWith("browser")))
 	           {
+		       //adding error checking the input is in expected format
+		      if (st.countTokens() != 4)
+		      {
+			  throw new IllegalArgumentException("Found a line "+szLine+" in a bedgraph file with "+st.countTokens()+" tokens while expecting 4"); 
+		      }
 		      szcurrchrom = st.nextToken();
 
 		      Integer objInt = (Integer) hmchromindex.get(szcurrchrom);
 		      if (objInt != null)
 		      {				
+
 		         nchrom = (objInt).intValue();
 
 			 int nactualbegin = Integer.parseInt(st.nextToken());
@@ -6982,6 +7156,15 @@ public class ChromImpute
 
     /////////////////////////////////////////////////////////////////////////////////////////
 
+    //updated in v.0.9.6 to make static
+       static class RecOtherCell
+       {
+	   double dsumy;
+	   double dsumysq;
+	   double dsumxy;
+	   BufferedReader brothercells;
+       }
+
     public void computePairCorrelation(String sztargetmark, String sztargetcell) throws IOException
     {
        PrintWriter pw = new PrintWriter(szoutdir+"/"+sztargetcell+"_"+sztargetmark+".txt");       
@@ -7009,13 +7192,7 @@ public class ChromImpute
 
        // BufferedReader[] brothercells = new BufferedReader[alothercells.size()];
 
-       class RecOtherCell
-       {
-	   double dsumy;
-	   double dsumysq;
-	   double dsumxy;
-	   BufferedReader brothercells;
-       }
+
        RecOtherCell[] theRecOtherCellA = new RecOtherCell[alothercells.size()];
        for (int nk = 0; nk < theRecOtherCellA.length; nk++)
        {
@@ -7240,7 +7417,7 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 0.9.5 of ChromImpute");
+	    System.out.println("This is version 0.9.6 of ChromImpute");
 	}
 	else if (szcommand.equalsIgnoreCase("Convert"))
 	{
@@ -7690,7 +7867,7 @@ public class ChromImpute
 	   int numsamples = ChromImpute.DEFAULTNUMSAMPLES;
 
 	   boolean bdnamethyl = ChromImpute.DEFAULTDNAMETHYL;
-	   int nminnumlocations = ChromImpute.DEFAULTMINNUMLOCATIONS;
+	   //int nminnumlocations = ChromImpute.DEFAULTMINNUMLOCATIONS;
 
 	   int numbags = ChromImpute.DEFAULTNUMBAGS;
 	   int nmintotalensemble = ChromImpute.DEFAULTMINTOTALENSEMBLE;
