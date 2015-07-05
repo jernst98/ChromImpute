@@ -3003,20 +3003,21 @@ public class ChromImpute
 		  noverallpos[na]++;
 	      }
 	  }
-       }
+       
 
        //generates data for the current chromosome 	  
-       
+	  //updated in v0.9.7 to close after each chromosome       
        //closes out the bufferedreaders
-       for (int na = 0; na < brA.length ; na++)
-       {
-          for (int nb = 0; nb < brA[na].length; nb++)
-	  {
-	     if (brA[na][nb] != null)
+          for (int na = 0; na < brA.length ; na++)
+          {
+             for (int nb = 0; nb < brA[na].length; nb++)
 	     {
-	        brA[na][nb].close();
+	        if (brA[na][nb] != null)
+	        {
+	           brA[na][nb].close();
+	        }
 	     }
-	  }
+          }
        }
     
        //System.out.println("IN FINISH");
@@ -5942,14 +5943,16 @@ public class ChromImpute
 		       //and adds distribution position now inside right boundary
 		       theBaseDistRecA_ntargetmarkindex_ncell.ddist = storeddist_nmarktarget[ncell]-ddiffleft*ddiffleft+ddiffright*ddiffright;
 		       
-		       if (theBaseDistRecA_ntargetmarkindex_ncell.ddist < -0.1)
+
+		       //updated in 0.9.7 to -100
+		       if (theBaseDistRecA_ntargetmarkindex_ncell.ddist < -100)
 		       {
 		          System.out.println("NEG DIST\t"+ddiffleft+"\t"+ddiffright+"\t"+numbin+"\t"+nbegin+"\t"+
                                            nbinindex+"\t"+ncell+"\t"+nmarktarget+"\t"+ntargetcell+"\t"+theBaseDistRecA_ntargetmarkindex_ncell.ddist+"\t"+
                                                   databinfirst_nposleft_nmarktarget[ncell]+
-						  "\t"+databinfirst_nposright_nmarktarget[ncell]+"\t"+storeddist_nmarktarget[ncell]);
-
-			  throw new Exception();
+		       			  "\t"+databinfirst_nposright_nmarktarget[ncell]+"\t"+storeddist_nmarktarget[ncell]);
+		       
+		         throw new Exception();
 		       }
 			 
 		       //updates the stored distance for this cell type
@@ -6392,16 +6395,19 @@ public class ChromImpute
 
 		       theBaseDistRecA_ntargetmarkindex_ncell.ddist = storeddist_nmarktarget[ncell]-ddiffleft*ddiffleft+ddiffright*ddiffright;
 
-		       if (theBaseDistRecA_ntargetmarkindex_ncell.ddist < -0.001)
+		       
+                       //removing 0.9.7 to -100
+		       if (theBaseDistRecA_ntargetmarkindex_ncell.ddist < -100)
 		       {
 		          System.out.println("NEG DIST\t"+ddiffleft+"\t"+ddiffright+"\t"+numbin+"\t"+nbegin+"\t"+
                                            nbinindex+"\t"+ncell+"\t"+nmarktarget+"\t"+ntargetcell+"\t"+theBaseDistRecA_ntargetmarkindex_ncell.ddist+"\t"+
                                                   databinfirst_nposleft_nmarktarget[ncell]+
-						  "\t"+databinfirst_nposright_nmarktarget[ncell]+"\t"+storeddist_nmarktarget[ncell]);
-
-			  throw new Exception();
+		       			  "\t"+databinfirst_nposright_nmarktarget[ncell]+"\t"+storeddist_nmarktarget[ncell]);
+		       
+		         throw new Exception();
 		       }
-			 
+		       
+
 		       storeddist_nmarktarget[ncell] = theBaseDistRecA_ntargetmarkindex_ncell.ddist;
 
 		    }
@@ -7417,7 +7423,7 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 0.9.6 of ChromImpute");
+	    System.out.println("This is version 0.9.8 of ChromImpute");
 	}
 	else if (szcommand.equalsIgnoreCase("Convert"))
 	{
@@ -7477,9 +7483,11 @@ public class ChromImpute
 	       {
 	          if (!f.mkdirs())
 		  {
-	             throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		     //throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		     System.out.println("ERROR: "+szoutdir+" does not exist and could not be created!");
+		     System.exit(1);
 	      	  }
-	      }
+	       }
 	   }
 	   else
 	   {
@@ -7490,6 +7498,7 @@ public class ChromImpute
 	   if (!bok)
 	   {
 	      System.out.println("USAGE: java ChromImpute Convert [-c chrom][-l convertsample][-m convertmark][-r resolution] INPUTDIR inputinfofile chrominfofile CONVERTEDDIR");
+	      System.exit(1);
 	   }
 	   else
 	   {
@@ -7500,6 +7509,7 @@ public class ChromImpute
 	      catch (IOException ioex)
               {
 	         ioex.printStackTrace(System.out);
+		 System.exit(1);
 	      }
 	   }
 	}
@@ -7664,7 +7674,9 @@ public class ChromImpute
 	      {
 	         if (!f.mkdirs())
 		 {
-	            throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		     //throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		    System.out.println("ERROR: "+szoutdir+" does not exist and could not be created!");
+		    System.exit(1);
 	      	 }
 	      }
 	      szoutcell = args[nargindex++];
@@ -7683,6 +7695,7 @@ public class ChromImpute
                                  "[-i incrementnarrow incrementwide][-k maxknn][-markonly][-methylavggenome|-methylavgchrom][-n knnwindow]"+
                                  "[-noprintbrowserheader][-o outputfile][-p selectedmarks][-printonefile][-r resolution][-tieglobal][-w windownarrow windowwide] "+
                                  "CONVERTEDDIR DISTANCEDIR PREDICTORDIR inputinfofile chrominfo OUTPUTIMPUTEDIR sample mark");
+	      System.exit(1);
 
 	   }
 	   else
@@ -7702,6 +7715,7 @@ public class ChromImpute
 	      catch (Exception ex)
 	      {
 	         ex.printStackTrace(System.out);
+		 System.exit(1);
 	      }
 	   }
 	}
@@ -7751,7 +7765,9 @@ public class ChromImpute
 	      {
 	         if (!f.mkdirs())
 		 {
-	            throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		     //throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		    System.out.println("ERROR: "+szoutdir+" does not exist and could not be created!");
+		    System.exit(1);
 	      	 }
 	      }
 	   }
@@ -7764,6 +7780,7 @@ public class ChromImpute
 	    {
 	       System.out.println("USAGE: java ChromImpute ComputeGlobalDist [-m mark][-r resolution][-s sample mark][-x extension] "+
                                  "CONVERTEDDIR inputinfofile chrominfo DISTANCEDIR");
+	       System.exit(1);
 	    }
 	    else
 	    {
@@ -7774,6 +7791,7 @@ public class ChromImpute
                catch (Exception ex)
 	       {
 	           ex.printStackTrace(System.out);
+		   System.exit(1);
 	       }
 	    }
 	}
@@ -7837,6 +7855,7 @@ public class ChromImpute
            if (!bok)
 	   {
 	       System.out.println("USAGE: java ChromImpute Eval [-f peakevalfile][-noprintbrowserheader][-o outfile][-p percent1 percent2][-printonefile] CONVERTEDDIR ConvertedFile IMPUTEDIR ImputeFile chrominfo");
+	       System.exit(1);
 	   }
 	   else
 	   {
@@ -7848,6 +7867,7 @@ public class ChromImpute
               catch (Exception ex)
 	      {
                  ex.printStackTrace(System.out);
+		 System.exit(1);
 	      }
 	   }
 	}
@@ -8011,7 +8031,9 @@ public class ChromImpute
 	      {
 	         if (!f.mkdirs())
 		 {
-	            throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		     //throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		    System.out.println("ERROR: "+szoutdir+" does not exist and could not be created!");
+		    System.exit(1);
 	      	 }
 	     }
 
@@ -8038,11 +8060,11 @@ public class ChromImpute
 
 	   if (!bok)
 	   {
-
 	      System.out.println("USAGE: java ChromImpute GenerateTrainData [-a mintotalensemble][-b numbags][-c chrom][-d seed]"+
                                     "[-dnamethyl infofile directory header][-f numsamples][-i incrementnarrow incrementwide]"+
                                     "[-k maxknn][-methylavggenome|-methylavgchrom][-n knnwindow][-r resolution][-tieglobal][-w windownarrow windowwide]"+
                                    " CONVERTEDDIR DISTANCEDIR inputinfofile chrominfo TRAINDATADIR mark");
+	      System.exit(1);
 	   }
 	   else
 	   {
@@ -8060,6 +8082,7 @@ public class ChromImpute
 	      catch (Exception ex)
 	      {
 	         ex.printStackTrace(System.out);
+		 System.exit(1);
 	      }
 	   }
 	}
@@ -8207,7 +8230,9 @@ public class ChromImpute
 	      {
 	         if (!f.mkdirs())
 		 {
-	            throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		     //throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		    System.out.println("ERROR: "+szoutdir+" does not exist and could not be created!");
+		    System.exit(1);
 	      	 }
 	      }
       
@@ -8224,6 +8249,7 @@ public class ChromImpute
 	   if (!bok)
 	   {
 	      System.out.println("USAGE: java ChromImpute Train [-a mintotalensemble][-b numbags][-sampleonly][-dnamethyl header][-g bagrequest][-k maxknn][-m minnumpoints][-markonly][-p selectedmarks][-q samplerequest] TRAINDATADIR inputinfofile PREDICTORDIR sample mark");
+	      System.exit(1);
 	   }
 	   else
 	   {
@@ -8242,19 +8268,24 @@ public class ChromImpute
 		     }
 		     catch (IllegalArgumentException ex)
 		     {
-			 System.out.println("Warning\t"+ex.getMessage());
+			 System.out.println("ERROR\t"+ex.getMessage());
+			 System.exit(1);
 		     }
 		  }
 	      }
 	      catch (Exception ex)
 	      {
 	         ex.printStackTrace(System.out);
+		 System.exit(1);
 	      }
 	   }
 	}
 	else
 	{
 	   System.out.println("Need to specify the mode Convert|ComputeGlobalDist|GenerateTrainData|Train|Apply|Eval|Version ");
+	   System.exit(1);
 	}
+
+	System.exit(0);
     }
 }
