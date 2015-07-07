@@ -7423,7 +7423,7 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 0.9.8 of ChromImpute");
+	    System.out.println("This is version 0.9.9 of ChromImpute");
 	}
 	else if (szcommand.equalsIgnoreCase("Convert"))
 	{
@@ -7506,9 +7506,9 @@ public class ChromImpute
               {
 		  new ChromImpute(szchrominfo,szinputdir,szimputeinfoINfile,szoutdir,nresolution,szchromwant,szconvertmark,szconvertcell);
 	      }
-	      catch (IOException ioex)
+	      catch (Exception ex)
               {
-	         ioex.printStackTrace(System.out);
+	         ex.printStackTrace(System.out);
 		 System.exit(1);
 	      }
 	   }
