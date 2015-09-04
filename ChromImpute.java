@@ -6822,7 +6822,7 @@ public class ChromImpute
 	                 nspan = Integer.parseInt(st.nextToken());
 		      }
 		   }
-	           else if ((!szLine.startsWith("#"))&&(!szLine.toLowerCase(Locale.ENGLISH).startsWith("browser")))
+	           else if ((!szLine.startsWith("#"))&&(!szLine.toLowerCase(Locale.ENGLISH).startsWith("browser"))&&(!szLine.toLowerCase(Locale.ENGLISH).startsWith("track")))
  	           { 
 		      if (!bdeclared)
 		      {
@@ -6887,12 +6887,16 @@ public class ChromImpute
 		            }
 			   
 			    //amount to add for last bin
-			    if (nend >= data_nchrom.length)
-			    {
-		               System.out.println("Invalid nend value "+nend+"\t"+szLine+"\t"+szcurrchrom);
-			    }
+			    //if (nend >= data_nchrom.length)
+			    //{
+			    //updated
+		            //   System.out.println("Invalid nend value "+nend+"\t"+szLine+"\t"+szcurrchrom);
+			    //}
 
-		            data_nchrom[nend] += fval*(nposition+nspan-nresolution*nend)/((float) nresolution); 			          
+			    if (nend < data_nchrom.length) //added in 1.0.0 to handle chromosome length multiple of resolution
+			    {
+		               data_nchrom[nend] += fval*(nposition+nspan-nresolution*nend)/((float) nresolution); 			          
+			    }
 			 }
 
 		         if (!bvariable)
@@ -6933,7 +6937,7 @@ public class ChromImpute
 	        while ((szLine = br.readLine())!=null)
 	        {
 		    StringTokenizer st = new StringTokenizer(szLine,"\t "); //added space here for delimiter in bedgraph files
-		   if ((!szLine.startsWith("#"))&&(!szLine.toLowerCase(Locale.ENGLISH).startsWith("browser")))
+		    if ((!szLine.startsWith("#"))&&(!szLine.toLowerCase(Locale.ENGLISH).startsWith("browser"))&&(!szLine.toLowerCase(Locale.ENGLISH).startsWith("track")))
 	           {
 		       //adding error checking the input is in expected format
 		      if (st.countTokens() != 4)
@@ -6973,7 +6977,11 @@ public class ChromImpute
 		            {
 		               data_nchrom[nbin] += fval;
 		            }
-		            data_nchrom[nend] += fval*(nactualend-nresolution*nend)/((float) nresolution); 	
+
+                            if (nend < data_nchrom.length) //added in 1.0.0 to handle chromosome length multiple of resolution
+			    {
+		               data_nchrom[nend] += fval*(nactualend-nresolution*nend)/((float) nresolution); 	
+			    }
 			 }
 		      }
 		   }
@@ -7423,7 +7431,7 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 0.9.9 of ChromImpute");
+	    System.out.println("This is version 1.0.0 of ChromImpute");
 	}
 	else if (szcommand.equalsIgnoreCase("Convert"))
 	{
