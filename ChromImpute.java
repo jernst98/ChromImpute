@@ -7431,7 +7431,7 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 1.0.0 of ChromImpute");
+	    System.out.println("This is version 1.0.1 of ChromImpute");
 	}
 	else if (szcommand.equalsIgnoreCase("Convert"))
 	{
@@ -8199,7 +8199,7 @@ public class ChromImpute
 	      */
 	      else if (szoption.equals("-k"))
 	      {
-	          nmaxknn = Integer.parseInt(args[nargindex]);
+	          nmaxknn = Integer.parseInt(args[nargindex++]);
 	      } 
 	      //else if (szoption.equals("-generate"))
 	      //{
