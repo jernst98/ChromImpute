@@ -129,7 +129,7 @@ public class RegressionTree
 	}
 
         //inititalizes the output numberformat
-	nf = NumberFormat.getInstance();
+	nf = NumberFormat.getInstance(Locale.ENGLISH);
 	nf.setMaximumFractionDigits(2);
 	nf.setGroupingUsed(false);
 
@@ -182,7 +182,7 @@ public class RegressionTree
      */ 
     public RegressionTree(BufferedReader brtreefile) throws IOException
     {
-	nf = NumberFormat.getInstance();
+	nf = NumberFormat.getInstance(Locale.ENGLISH);
 	nf.setMaximumFractionDigits(2);
 	nf.setGroupingUsed(false);
 	theTree = new TreeNode();

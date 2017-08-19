@@ -796,7 +796,7 @@ public class ChromImpute
 	this.szclassifierdir = szclassifierdir;
 	this.szchromwant = szchromwant;
 
-        nf1 = NumberFormat.getInstance();
+        nf1 = NumberFormat.getInstance(Locale.ENGLISH);
 	nf1.setMaximumFractionDigits(1);
 	nf1.setGroupingUsed(false);
 	if (szoutfile !=null)
@@ -898,7 +898,7 @@ public class ChromImpute
 	//this.bloadtrainfile = bloadtrainfile;
 	//this.nseed = nseed;
 
-        nf1 = NumberFormat.getInstance();
+        nf1 = NumberFormat.getInstance(Locale.ENGLISH);
 	nf1.setMaximumFractionDigits(1);
 	nf1.setGroupingUsed(false);
 
@@ -1038,7 +1038,7 @@ public class ChromImpute
 
 	//szoutfile = "impute_"+szoutcell+"_"+szoutmark+".wig";//+"_"+numbags+"_"+numsamples+"_"+nminnumlocations+".wig";
 
-        nf1 = NumberFormat.getInstance();
+        nf1 = NumberFormat.getInstance(Locale.ENGLISH);
 	nf1.setMaximumFractionDigits(1);
 	nf1.setGroupingUsed(false);
 
@@ -1097,7 +1097,7 @@ public class ChromImpute
        this.szconvertmark = szconvertmark;
        this.szconvertcell = szconvertcell;
 
-       nf1 = NumberFormat.getInstance();
+       nf1 = NumberFormat.getInstance(Locale.ENGLISH);
        nf1.setMaximumFractionDigits(1);
        nf1.setGroupingUsed(false);
 	
@@ -1648,7 +1648,7 @@ public class ChromImpute
     public void executeTrain() throws Exception
     {
 
-       NumberFormat nf  = NumberFormat.getInstance();
+       NumberFormat nf  = NumberFormat.getInstance(Locale.ENGLISH);
        nf.setMaximumFractionDigits(2);
        nf.setGroupingUsed(false);
 
@@ -1916,7 +1916,7 @@ public class ChromImpute
     public void executeApply() throws Exception
     {
        
-       NumberFormat nf  = NumberFormat.getInstance();
+       NumberFormat nf  = NumberFormat.getInstance(Locale.ENGLISH);
        nf.setMaximumFractionDigits(2);
        nf.setGroupingUsed(false);
 
@@ -2549,7 +2549,7 @@ public class ChromImpute
     public void executeGenerateTraining() throws Exception  
     {
        
-       NumberFormat nf  = NumberFormat.getInstance();
+       NumberFormat nf  = NumberFormat.getInstance(Locale.ENGLISH);
        nf.setMaximumFractionDigits(2);
        nf.setGroupingUsed(false);
 
@@ -3403,7 +3403,7 @@ public class ChromImpute
        double dkeepimpute = 0;
     
 
-       NumberFormat nf4 = NumberFormat.getInstance();
+       NumberFormat nf4 = NumberFormat.getInstance(Locale.ENGLISH);
        nf4.setGroupingUsed(false);
        nf4.setMaximumFractionDigits(4);
 
@@ -3673,7 +3673,7 @@ public class ChromImpute
 
 	String szLine;
 
-        NumberFormat nf4 = NumberFormat.getInstance();
+        NumberFormat nf4 = NumberFormat.getInstance(Locale.ENGLISH);
         nf4.setGroupingUsed(false);
         nf4.setMaximumFractionDigits(4);
 
@@ -3856,7 +3856,7 @@ public class ChromImpute
        double dkeepimpute = 0;
     
 
-       NumberFormat nf4 = NumberFormat.getInstance();
+       NumberFormat nf4 = NumberFormat.getInstance(Locale.ENGLISH);
        nf4.setGroupingUsed(false);
        nf4.setMaximumFractionDigits(4);
 
@@ -6701,7 +6701,7 @@ public class ChromImpute
 	  nmark++;
        }
 
-       NumberFormat nf  = NumberFormat.getInstance();
+       NumberFormat nf  = NumberFormat.getInstance(Locale.ENGLISH);
        nf.setMaximumFractionDigits(2);
        nf.setGroupingUsed(false);
      
@@ -7431,7 +7431,7 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 1.0.1 of ChromImpute");
+	    System.out.println("This is version 1.0.2 of ChromImpute");
 	}
 	else if (szcommand.equalsIgnoreCase("Convert"))
 	{
