@@ -5,14 +5,14 @@ import java.util.*;
 import java.util.zip.GZIPOutputStream;
 import java.text.*;
 //import weka.core.matrix.*; //UNCOMMENT for linear regression uses external Weka package
-                
+                 
 public class ChromImpute
 {
 
 
     static int NUMLINES = 50000; //number of lines currently stored in memory
 
-
+    static int DEFAULTCHROMHMMBIN = 200;
 
     /**
      * Default value of dna-methylation
@@ -573,6 +573,26 @@ public class ChromImpute
 
     String szpeakevalfile = null;
 
+    /**
+     * signal treshold to exceed to make 1 call when outputing binarization
+     */
+    double dsignalthresh;
+
+    /**
+     * the binsize of ChromHMM
+     */
+    int nbinsize;
+
+    /**
+     * whether to include partial lines
+     */
+    boolean bpartial;
+
+    /**
+     * whether to use names in file when making chromhmm output
+     */
+    boolean busenames;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -633,6 +653,287 @@ public class ChromImpute
 	   }
        }
    }		
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    /**
+     * Constructor for exportToChromHMM
+     */
+    public ChromImpute(String szchrominfo, String szinputdir,String szimputeinfoINfile,String szoutdir,
+                       int nresolution, double dsignalthresh, int nbinsize, boolean bpartial, boolean busenames) throws IOException, IllegalArgumentException
+    {
+
+	this.szchrominfo = szchrominfo;
+	this.szinputdir = szinputdir;
+	this.szimputeinfoINfile = szimputeinfoINfile;
+	this.szoutdir = szoutdir;
+	this.nresolution = nresolution;
+
+	this.dsignalthresh = dsignalthresh;
+	this.nbinsize = nbinsize;
+	this.bpartial = bpartial;
+	this.busenames = busenames;
+
+	exportToChromHMM();
+    }
+
+    /**
+     * Loads information on the data imputation
+     * File is of the form input: load cell type, load mark, data file
+     */
+    public void loadExportInfo() throws IOException
+    {
+       //stores the list of all marks
+       hsmarks = new HashSet();
+
+       //stores the list of all cell types involved in the imputation
+       hscells = new HashSet();
+
+       //stores for each mark an array list with all cell types associated with the mark
+       hmmarkcell = new HashMap(); 
+
+       //stores for a mark-cell combination the associated input data file
+       hmmarkcellfile = new HashMap();
+
+       //	
+       BufferedReader brimputeinfo =  Util.getBufferedReader(szimputeinfoINfile);
+       String szLine;
+
+       while ((szLine = brimputeinfo.readLine())!=null)
+       {
+          StringTokenizer st = new StringTokenizer(szLine,"\t");
+	  if (st.countTokens() == 0) continue;
+	  //reading cell and mark in the file
+	  String szcell = st.nextToken();
+	  String szmark = st.nextToken();
+
+	  //adding mark to the set of marks available
+	  hsmarks.add(szmark);
+
+	  //adding mark to the set of cell types
+	  hscells.add(szcell);
+	   
+	  ArrayList alcells = (ArrayList) hmmarkcell.get(szmark);
+	  if (alcells == null)
+	  {
+	      //first time with this mark, creates arraylist associated with it
+             alcells = new ArrayList();
+             hmmarkcell.put(szmark,alcells);
+	  }
+	  //adding cell to the list of cell
+	  alcells.add(szcell);
+
+	  //gets the input file
+	  if (busenames)
+	  {
+	     String szinfile = st.nextToken();
+	     //maps a mark cell combination to a file
+	     hmmarkcellfile.put(szmark+"\t"+szcell,szinfile);
+	  }
+
+	   //reads in all the mark-cell-data file information
+       }
+       brimputeinfo.close();	
+
+       //stores the count of the number of marks and cells
+       nummarks = hsmarks.size();
+       numcells = hscells.size();
+
+       //stores the marks and cells into the marksA and cellsA array
+       //and then sorts them
+       marksA = new String[nummarks];
+       cellsA = new String[numcells];
+       Iterator itrcells = (Iterator) hscells.iterator();
+       Iterator itrmark = (Iterator) hsmarks.iterator();
+
+       for (int nmark = 0; nmark < marksA.length; nmark++)
+       {
+	   marksA[nmark] = (String) itrmark.next();
+       }
+
+       for (int ncell = 0; ncell < cellsA.length; ncell++)
+       {
+	   cellsA[ncell] = (String) itrcells.next();
+       }
+
+       Arrays.sort(marksA);
+       Arrays.sort(cellsA);
+
+    }
+
+    public void exportToChromHMM() throws IllegalArgumentException, IOException
+    {
+
+	int numgroup = 0;
+	if (nbinsize % nresolution != 0)
+	{
+	    throw new IllegalArgumentException("ChromHMM binsize should be evenly divisible by ChromImpute resolution, but current values of "+nbinsize+" "+nresolution
+                                              +" do not satisfy that");
+	}
+	else
+	{
+	    numgroup = nbinsize / nresolution;
+	}
+
+	loadChromInfo();
+        loadExportInfo();
+
+	NumberFormat nf  = NumberFormat.getInstance(Locale.ENGLISH);
+	nf.setMaximumFractionDigits(2);
+	nf.setGroupingUsed(false);
+
+        boolean bbinary = (dsignalthresh < Double.MAX_VALUE);
+
+	for (int ncell = 0; ncell < cellsA.length; ncell++)
+	{
+	    String szcell = cellsA[ncell];
+
+	    Iterator itrchrom = (Iterator) hmchromsize.keySet().iterator();
+
+	    while (itrchrom.hasNext())
+	    {
+		String szchrom = (String) itrchrom.next(); 
+
+		int nchromsize = ((Integer) hmchromsize.get(szchrom)).intValue();
+
+		int numfulllines = ((int)(nchromsize/(numgroup*nresolution)))*numgroup;
+
+		GZIPOutputStream pw;
+
+		if (bbinary)
+		{
+	            pw = new GZIPOutputStream(new FileOutputStream(
+						    szoutdir+"/"+szcell+"_"+szchrom+"_binary.txt.gz"));
+		}
+		else
+		{
+                    pw = new GZIPOutputStream(new FileOutputStream(
+						   szoutdir+"/"+szcell+"_"+szchrom+"_signal.txt.gz"));
+		}
+
+		String szout = szcell+"\t"+szchrom+"\n";
+
+		byte[] btformat = szout.getBytes();
+		pw.write(btformat,0,btformat.length);
+
+		szout = marksA[0];
+		for (int nmark = 1; nmark < marksA.length; nmark++)
+	        {
+		    szout += "\t"+marksA[nmark];
+		}
+		szout += "\n";
+
+		btformat = szout.getBytes();
+		pw.write(btformat,0,btformat.length);
+
+		BufferedReader[] brA = new BufferedReader[marksA.length];
+		for (int nmark = 0; nmark < marksA.length; nmark++)
+		{
+		    String szinfile;
+		    if (busenames)
+		    {
+			szinfile = szinputdir+"/"+szchrom+"_"+((String) hmmarkcellfile.get(marksA[nmark]+"\t"+szcell));
+		    }
+		    else
+		    {
+			szinfile = szinputdir+"/"+szchrom+"_impute_"+szcell+"_"+marksA[nmark]+".wig.gz";
+		    }
+
+		    File f = new File(szinfile);
+
+		    if (f.exists())
+		    {
+			brA[nmark] = Util.getBufferedReader(szinfile);
+		    }
+		    else
+		    {
+			throw new IllegalArgumentException("Could not find file "+szinfile);
+		    }
+
+		    brA[nmark].readLine();
+		    brA[nmark].readLine();
+		}
+
+
+	        String szLine;
+		boolean bcontinue = true;
+
+		int[] ntotallines = new int[marksA.length];
+		while (bcontinue)
+	        {
+		    boolean bfound = false;
+		    szout = "";
+
+		    for (int nmark = 0; nmark < brA.length; nmark++)
+		    {
+		       double dsum = 0;
+		       int ntally =0;
+
+		       for (int nsmall = 0; nsmall < numgroup; nsmall++)
+		       {
+		          szLine = brA[nmark].readLine();
+			  if (szLine == null)
+			  {
+			      bcontinue = false;
+			      break;
+			  }
+			  else
+			  {
+			      ntotallines[nmark]++;
+			      bfound = true;
+			      dsum += Double.parseDouble(szLine);
+			      ntally++;
+			  }
+		       }
+
+		       if (bfound)
+		       {
+			  double davg = dsum/(double)ntally;
+			  String szval;
+			  if (bbinary)
+			  {
+		             if (davg >= dsignalthresh)
+			     {
+				 szval = "1";
+			     }
+			     else
+			     {
+				 szval = "0";
+			     }
+			  }
+			  else
+			  {
+			      szval = nf.format(davg);
+			  }
+
+			  if (nmark >= 1)
+		          {
+		             szout += "\t"+szval;
+			  }
+			  else
+			  {
+		             szout += szval;
+			  }
+		       }
+		    }
+			
+
+		    if ((bfound) && (bpartial || (ntotallines[0] <= numfulllines)))
+		    {
+		       szout += "\n";
+	       	       btformat = szout.getBytes();
+		       pw.write(btformat,0,btformat.length);
+		    }
+		}
+		pw.finish();
+		pw.close();
+
+		for (int ni = 0; ni < brA.length; ni++)
+	        {
+		   brA[ni].close();
+		}
+	    }
+	}
+    }
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////
@@ -2343,8 +2644,12 @@ public class ChromImpute
        }
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+
  
     //////////////////////////////////////////////////////////////////////////////////////////////// 
+
     /**
      * Loads information on the data imputation
      * File is of the form input: load cell type, load mark, data file
@@ -7431,7 +7736,96 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 1.0.2 of ChromImpute");
+	    System.out.println("This is version 1.0.3 of ChromImpute");
+	}
+	else if (szcommand.equalsIgnoreCase("ExportToChromHMM"))
+	{
+	    boolean bpartial = false;
+	    boolean busenames = false;
+	    int nbinsize = ChromImpute.DEFAULTCHROMHMMBIN;
+	    double dsignalthresh = Double.MAX_VALUE;
+	    //the convert command takes a target set of files 
+	    //and converts them consistent with the desired resolution
+	   while (nargindex < args.length-4)
+	   { 
+	      //imputation file is CELL type, then mark, then data file
+	      //the -r option specifies the output resolution to be used
+
+
+	      String szoption;
+
+	      szoption = args[nargindex++];
+	    
+	      if (szoption.equals("-r"))
+	      {
+	         nresolution = Integer.parseInt(args[nargindex++]);
+	      }
+	      else if (szoption.equals("-g"))
+	      {
+		  dsignalthresh = Double.parseDouble(args[nargindex++]);
+	      }
+	      else if (szoption.equals("-b"))
+	      {
+		  nbinsize = Integer.parseInt(args[nargindex++]);
+	      }
+	      else if (szoption.equals("-partial"))
+	      {
+		  bpartial = true;
+	      }
+	      else if (szoption.equals("-usenames"))
+	      {
+		  busenames = true;
+	      }
+	      else
+	      {
+		 bok = false;
+	      }
+	   }
+
+	   if (nargindex == args.length-4)
+           {
+	       //input data
+	       szinputdir = args[nargindex++];
+	       szimputeinfoINfile = args[nargindex++];
+	       szchrominfo = args[nargindex++];
+	       szoutdir = args[nargindex];
+
+	       File f = new File(szoutdir);
+	       if (!f.exists())
+	       {
+	          if (!f.mkdirs())
+		  {
+		     //throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		     System.out.println("ERROR: "+szoutdir+" does not exist and could not be created!");
+		     System.exit(1);
+	      	  }
+	       }
+	   }
+	   else
+	   {
+	       bok = false;
+	   }
+
+
+	   if (!bok)
+	   {
+	      System.out.println(
+            "USAGE: java ChromImpute ExportToChromHMM [-b chromhmmbinsize][-g signalthresh][-partial][-r resolution][-usenames] CHROMIMPUTEDIR inputinfofile chrominfofile CHROMHMMDIR");
+	      System.exit(1);
+	   }
+	   else
+	   {
+              try
+              {
+		  new ChromImpute(szchrominfo,szinputdir,szimputeinfoINfile,szoutdir,nresolution, dsignalthresh, nbinsize, bpartial, busenames);
+	      }
+	      catch (Exception ex)
+              {
+	         ex.printStackTrace(System.out);
+		 System.exit(1);
+	      }
+	   }
+
 	}
 	else if (szcommand.equalsIgnoreCase("Convert"))
 	{
@@ -8290,7 +8684,7 @@ public class ChromImpute
 	}
 	else
 	{
-	   System.out.println("Need to specify the mode Convert|ComputeGlobalDist|GenerateTrainData|Train|Apply|Eval|Version ");
+	   System.out.println("Need to specify the mode Convert|ComputeGlobalDist|ExportToChromHMM|GenerateTrainData|Train|Apply|Eval|Version ");
 	   System.exit(1);
 	}
 
