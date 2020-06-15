@@ -1,1 +1,1 @@
-See http://www.biolchem.ucla.edu/labs/ernst/ChromImpute/ for more information on ChromImpute
+See https://ernstlab.biolchem.ucla.edu/ChromImpute/ for more information on ChromImpute
