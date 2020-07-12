@@ -227,6 +227,12 @@ public class ChromImpute
 
 
     /**
+     * output file for single imputation std
+     */
+    String szoutfile_std;
+
+
+    /**
      * the maximum chromosome size
      */
     long nmaxchromsize;
@@ -315,6 +321,11 @@ public class ChromImpute
     GZIPOutputStream pwout;
 
     /**
+     * Standard deviation output track
+     */
+    GZIPOutputStream pwout_std;
+
+    /**
      *
      */
     GZIPOutputStream pwattributes;
@@ -354,6 +365,13 @@ public class ChromImpute
      *
      */
     boolean bdnamethyl = false;
+
+
+    /**
+     * Whether to output standard deviation when using Apply
+     */
+    boolean bstd = false;
+
 
     //PARAMS used for DNA METHYLATION
     /**
@@ -1023,7 +1041,7 @@ public class ChromImpute
 		       boolean bprintbrowserheader, boolean bprintonefile,
 		       String szmethylheader, String szmethylinfo, String szmethylDIR,
 		       int nmaxoffsetnarrow,int nmaxoffsetwide,int nincrementnarrow,int nincrementwide, int nknnoffset,
-		       boolean bmethylavggenome, boolean bmethylavgchrom, boolean btieglobal
+		       boolean bmethylavggenome, boolean bmethylavgchrom, boolean btieglobal, boolean bstd, String szoutfile_std
 		       //String szmethylheader, String szmethylinfo, String szmethylDIR,
 		       //double dedgeval, double dmethylscale
                        ) throws Exception
@@ -1109,6 +1127,16 @@ public class ChromImpute
 	   this.szoutfile = "impute_"+szoutcell+"_"+szoutmark+".wig";//+"_"+numbags+"_"+numsamples+"_"+nminnumlocations+".wig";
 	}
 
+
+	if (szoutfile_std != null)
+	{
+	    this.szoutfile_std = szoutfile_std;
+	}
+	else
+	{
+	    this.szoutfile_std = "impute_"+szoutcell+"_"+szoutmark+"_coeffv.wig";
+	}
+
         if (bdnamethyl)
         {
            loadDNAMethylHeader();
@@ -1139,6 +1167,7 @@ public class ChromImpute
 	    //System.out.println("numbags is "+this.numbags+" "+nmintotalensemble+" "+alcells.size());
 	}
 
+	this.bstd = bstd;
 
 	//loadTargets();	
 	loadDistInfo();
@@ -2332,6 +2361,17 @@ public class ChromImpute
 	     byte[] btformat = szHeader.getBytes();
 	     pwout.write(btformat,0,btformat.length);	     
 	  }
+
+	  if (bstd)
+	  {
+             pwout_std = new GZIPOutputStream(new FileOutputStream(szoutdir+"/"+szoutfile_std+".gz"));
+	     if (bprintbrowserheader)//&&(!bdnamethyl))
+	     {
+	        String szHeader = "track type=wiggle_0 name="+szoutcell+"_"+szoutmark+"_imputed_coeffv\n";	     
+	        byte[] btformat = szHeader.getBytes();
+	        pwout_std.write(btformat,0,btformat.length);	     
+	     }
+	  }
        }
 
 
@@ -2349,6 +2389,11 @@ public class ChromImpute
 	  if (!bprintonefile)
 	  {
 	     pwout = new GZIPOutputStream(new FileOutputStream(szoutdir+"/"+szchrom+"_"+szoutfile+".gz"));
+
+	     if (bstd)
+	     {
+		 pwout_std = new GZIPOutputStream(new FileOutputStream(szoutdir+"/"+szchrom+"_"+szoutfile_std+".gz"));
+	     }
 	  }
 						  //theTargetRec.szoutfile+".gz"));
 
@@ -2359,7 +2404,7 @@ public class ChromImpute
 
           if ((bprintbrowserheader)&&(!bprintonefile))
           {
-	     szHeader = "track type=wiggle_0 name="+szoutcell+"_"+szoutmark+"_imputed\n";
+	     szHeader = "track type=wiggle_0 name="+szoutcell+"_"+szoutmark+"_imputed\n";	     
           }
 		    //theTargetRec.szcell+"_"+theTargetRec.szmark+"_imputed\n"+
 	  if (bdnamethyl)
@@ -2372,6 +2417,29 @@ public class ChromImpute
 	  }
           byte[] btformat = szHeader.getBytes();
           pwout.write(btformat,0,btformat.length);
+
+
+	  if (bstd)
+	  {
+	     String szHeaderStd = "";
+
+             if ((bprintbrowserheader)&&(!bprintonefile))
+             {
+	        szHeaderStd = "track type=wiggle_0 name="+szoutcell+"_"+szoutmark+"_imputed_coeffv\n";	     
+	     }
+		    //theTargetRec.szcell+"_"+theTargetRec.szmark+"_imputed\n"+
+	     if (bdnamethyl)
+	     {
+	        szHeaderStd += "variableStep chrom="+szchrom+"\n";
+	     }
+             else
+             {
+	        szHeaderStd += "fixedStep chrom="+szchrom+" start=1 step="+nresolution+" span="+nresolution+"\n";
+	     }
+
+	     btformat = szHeaderStd.getBytes();
+	     pwout_std.write(btformat,0,btformat.length);
+	  }
 	     //}
 
 
@@ -2429,6 +2497,7 @@ public class ChromImpute
 	  int nchromsize = (((Integer) hmchromsize.get(szchrom)).intValue()-1)/nresolution+1;
 	 
 	  float[] predictvals = null;
+	  float[] predictvals_sq = null;
 	  boolean[] presentvals =null;
 	
 	  if (bdnamethyl)
@@ -2440,6 +2509,11 @@ public class ChromImpute
           {
              predictvals =  new float[nchromsize];
           }
+
+	  if (bstd)
+	  {
+	      predictvals_sq = new float[predictvals.length];
+	  }
 	
 	  //allocating memory
           for (int nmark = 0; nmark < marksA.length; nmark++)
@@ -2555,12 +2629,12 @@ public class ChromImpute
 						  //bmarkcell, bcellmark,
                                                    markstargetcellA,ntargetcell,
 						  // false,
-                                                  predictvals,presentvals,almethylvals,almethylcoord,methylindexA);
+                                                  predictvals,presentvals,almethylvals,almethylcoord,methylindexA,predictvals_sq);
 	     }
 	     else
 	     {
                 generateInstanceDataTest(databinlast,databinlastCELLMARK,databinfirst,nbin,nbeginread-n2nmaxoffset,
-						     markstargetcellA,ntargetcell,ntargetmark,predictvals);
+					 markstargetcellA,ntargetcell,ntargetmark,predictvals,predictvals_sq);
 	     }
 	  
 
@@ -2606,13 +2680,67 @@ public class ChromImpute
 	        }
                 btformat = szval.getBytes();
                 pwout.write(btformat,0,btformat.length);
+
+		if (bstd)
+		{
+
+		   String szval_std;
+
+	           if (presentvals[na])
+	           {
+		      //we are making a prediction for the dna methylation
+		      //also have to rescale based on NMETHYLSCALE value
+		      //double dstd = 1.0/(NMETHYLSCALE*numclassifiers)*Math.sqrt(numclassifiers*predictvals_sq[na]-predictvals[na]*predictvals[na]);
+			//changed this to be standard deviation normalized by mean that is coeffv
+		       double dstd;
+		       if (predictvals[na] >0)
+		       {
+		          dstd = 1.0/(predictvals[na])*
+                                  Math.sqrt(numclassifiers*predictvals_sq[na]-predictvals[na]*predictvals[na]);
+		       }
+                       else
+		       {
+			   dstd = 0;
+		       }
+
+		      szval_std = nmethylcoord+"\t"+nf.format(dstd)+"\n";
+		   }
+		   else
+	           {
+		      //going to use default edge val
+		      szval_std = nmethylcoord+"\t0\n";
+		   }
+
+		   btformat = szval_std.getBytes();
+		   pwout_std.write(btformat,0,btformat.length);
+		}
 	     }
 	     else
 	     {
 		 //prints the average
-		 String szval = nf.format(predictvals[na]/numclassifiers)+"\n";
+		String szval = nf.format(predictvals[na]/numclassifiers)+"\n";
                 btformat = szval.getBytes();
                 pwout.write(btformat,0,btformat.length);
+
+		if (bstd)
+		{
+		    double dstd;
+		    //double dstd = 1.0/(numclassifiers)*Math.sqrt(numclassifiers*predictvals_sq[na]-predictvals[na]*predictvals[na]);
+		    if (predictvals[na] > 0)
+		    {
+			//changed this to be standard deviation normalized by mean that is coeffv
+		       dstd = 1/(predictvals[na])*
+                                   Math.sqrt(numclassifiers*predictvals_sq[na]-predictvals[na]*predictvals[na]);
+		    }
+		    else
+		    {
+			dstd = 0;
+		    }
+		    String szval_std = nf.format(dstd)+"\n";
+
+		    btformat = szval_std.getBytes();
+		    pwout_std.write(btformat,0,btformat.length);
+		}
      	     }
 	  }
 
@@ -2634,13 +2762,26 @@ public class ChromImpute
 	  {
 	     pwout.finish();
              pwout.close();	  
+
+	     if (bstd)
+	     {
+		 pwout_std.finish();
+		 pwout_std.close();
+	     }
 	  }
        }
 
        if (bprintonefile)
        {
 	   pwout.finish();
-	   pwout.close();	  
+	   pwout.close();
+
+
+	   if (bstd)
+	   {
+	       pwout_std.finish();
+	       pwout_std.close();
+	   }	  
        }
     }
 
@@ -6079,7 +6220,7 @@ public class ChromImpute
 					 //boolean[][] bmarkcell, boolean[][] bcellmark, 
 					 int[] markstargetcellA, int ntargetcell, int ntargetmark,
 					 //boolean btrain, 
-                                     float[] predictvals) throws Exception
+					 float[] predictvals, float[] predictvals_sq) throws Exception
     {
        //features are target cell type
 
@@ -6517,7 +6658,11 @@ public class ChromImpute
 		       }
 		        
 		       predictvals[nbinindex_plus_nbegin] += dpredictval;		      
-		      
+
+		       if (bstd)
+		       {
+		          predictvals_sq[nbinindex_plus_nbegin] += dpredictval*dpredictval;		      
+		       }  
 		    }
 	            //long lbegin4 = System.currentTimeMillis();
 	            //ltime3 += (lbegin4-lbegin3);
@@ -6541,7 +6686,7 @@ public class ChromImpute
                                      int[] markstargetcellA, int ntargetcell, 
 						  //boolean btrain, 
                                      float[] predictvals,boolean[] presentvals,ArrayList almethylvals,
-				     ArrayList almethylcoord, int[] methylindexA) throws Exception
+				     ArrayList almethylcoord, int[] methylindexA, float[] predictvals_sq) throws Exception
     {
 
  	//ArrayList theCurrInstances;
@@ -6935,6 +7080,10 @@ public class ChromImpute
 			        }
 
                                 predictvals[methylindexA[0]] += dpredictval;
+				if (bstd)
+				{
+                                   predictvals_sq[methylindexA[0]] += dpredictval*dpredictval;
+				}
                                 presentvals[methylindexA[0]] = true;
 				
 		             }
@@ -6958,6 +7107,10 @@ public class ChromImpute
 
 
 				predictvals[methylindexA[0]] += dpredictval;
+				if (bstd)
+				{
+				   predictvals_sq[methylindexA[0]] += dpredictval*dpredictval;
+				}
 				presentvals[methylindexA[0]] = true;
 			     }   
 			  }
@@ -7692,6 +7845,11 @@ public class ChromImpute
 	String szoutfile = null;
 
 
+	/**
+	 * output file for standard deviation
+	 */
+	String szoutfile_std = null;
+
         String szmethylheader = null;
 
 	String szmethylinfo = null;
@@ -7736,7 +7894,7 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 1.0.3 of ChromImpute");
+	    System.out.println("This is version 1.0.4 of ChromImpute");
 	}
 	else if (szcommand.equalsIgnoreCase("ExportToChromHMM"))
 	{
@@ -7931,6 +8089,7 @@ public class ChromImpute
 	    boolean bmethylavggenome = false;
 	    boolean bmethylavgchrom = false;
 	    boolean btieglobal = false;
+	    boolean bstd =false;
 	    //String szchromwant = null;
 
 	   while (nargindex < args.length-8)
@@ -7987,6 +8146,10 @@ public class ChromImpute
 	      {
 		 szoutfile = args[nargindex++];
 	      }
+	      else if (szoption.equals("-t"))
+	      {
+		 szoutfile_std = args[nargindex++];
+	      }
 	      else if (szoption.equals("-p"))
 	      {
 		  szpioneermark = args[nargindex++];
@@ -8008,6 +8171,10 @@ public class ChromImpute
 		 //this specifies the target cell and mark
 		 szoutcell = args[nargindex++];
 		 szoutmark = args[nargindex++];
+	      }
+	      else if (szoption.equals("-coeffv"))
+	      {
+		  bstd = true;
 	      }
 	      else if ((szoption.equals("-nosame"))||(szoption.equals("-markonly")))
 	      {
@@ -8093,9 +8260,9 @@ public class ChromImpute
 
 	   if (!bok)
 	   {
-	      System.out.println("USAGE: java ChromImpute Apply [-a mintotalensemble][-b numbags][-c chrom][-sampleonly][-dnamethyl infofile directory header]"+
+	      System.out.println("USAGE: java ChromImpute Apply [-a mintotalensemble][-b numbags][-c chrom][-coeffv][-sampleonly][-dnamethyl infofile directory header]"+
                                  "[-i incrementnarrow incrementwide][-k maxknn][-markonly][-methylavggenome|-methylavgchrom][-n knnwindow]"+
-                                 "[-noprintbrowserheader][-o outputfile][-p selectedmarks][-printonefile][-r resolution][-tieglobal][-w windownarrow windowwide] "+
+                                 "[-noprintbrowserheader][-o outputfile][-p selectedmarks][-printonefile][-r resolution][-std][-t outputfile_coeffv][-tieglobal][-w windownarrow windowwide] "+
                                  "CONVERTEDDIR DISTANCEDIR PREDICTORDIR inputinfofile chrominfo OUTPUTIMPUTEDIR sample mark");
 	      System.exit(1);
 
@@ -8111,7 +8278,7 @@ public class ChromImpute
 				                               szchromwant,bdnamethyl,nmintotalensemble,numbags,bprintbrowserheader,bprintonefile,
 				                               szmethylheader,szmethylinfo,szmethylDIR,
 				                               nmaxoffsetnarrow,nmaxoffsetwide,nincrementnarrow,nincrementwide, nknnoffset,
-				                               bmethylavggenome, bmethylavgchrom, btieglobal);
+				  bmethylavggenome, bmethylavgchrom, btieglobal,bstd, szoutfile_std);
 
 	      }
 	      catch (Exception ex)
