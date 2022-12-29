@@ -280,8 +280,10 @@ public class ChromImpute
     HashMap hmmarkcellfile;
 
     //ArrayList altargetrecs;
-
-
+    /**
+     *A mapping from mark,cell combo to a subdirectory for converted data
+     */
+    HashMap hmmarkcellsubdir;
 
     //total bins of the chromosomes
     /**
@@ -849,7 +851,12 @@ public class ChromImpute
 		    String szinfile;
 		    if (busenames)
 		    {
-			szinfile = szinputdir+"/"+szchrom+"_"+((String) hmmarkcellfile.get(marksA[nmark]+"\t"+szcell));
+                        String szsubdir = "";
+			Object objsubdir = null;
+                        if ((objsubdir=  hmmarkcellsubdir.get(marksA[nmark]+"\t"+szcell))!= null)
+                            szsubdir = (String) objsubdir +"/";
+
+			szinfile = szinputdir+"/"+szsubdir+szchrom+"_"+((String) hmmarkcellfile.get(marksA[nmark]+"\t"+szcell));
 		    }
 		    else
 		    {
@@ -2524,7 +2531,13 @@ public class ChromImpute
 
 	        if (szinfile != null)
 	        {
-	           brA[nmark][ncell] = Util.getBufferedReader(szinputdir+"/"+szchrom+"_"+szinfile+".wig.gz");
+		   String szsubdir = "";
+		   Object objsubdir = null;
+		   if ((objsubdir= hmmarkcellsubdir.get(marksA[nmark]+"\t"+cellsA[ncell]))!= null)
+		       szsubdir = (String) objsubdir +"/";
+
+		   brA[nmark][ncell] = Util.getBufferedReader(szinputdir+"/"+szsubdir+szchrom+"_"+szinfile+".wig.gz");
+		   //brA[nmark][ncell] = Util.getBufferedReader(szinputdir+"/"+szchrom+"_"+szinfile+".wig.gz");
 
                    brA[nmark][ncell].readLine();
 	           brA[nmark][ncell].readLine();
@@ -2809,6 +2822,8 @@ public class ChromImpute
        //stores for a mark-cell combination the associated input data file
        hmmarkcellfile = new HashMap();
 
+       //stores for a mark-cell combination the associated subdirectory
+       hmmarkcellsubdir = new HashMap();
        //	
        BufferedReader brimputeinfo =  Util.getBufferedReader(szimputeinfoINfile);
        String szLine;
@@ -2855,6 +2870,12 @@ public class ChromImpute
 
 	  //maps a mark cell combination to a file
 	  hmmarkcellfile.put(szmark+"\t"+szcell,szinfile);
+
+	  if (st.hasMoreTokens())
+	  {
+	      String szoutdir = st.nextToken();
+	      hmmarkcellsubdir.put(szmark+"\t"+szcell, szoutdir);
+	  }
 
 	   //reads in all the mark-cell-data file information
        }
@@ -3283,13 +3304,18 @@ public class ChromImpute
 	  {
              for (int ncell = 0; ncell < cellsA.length; ncell++)
 	     {
+
 	        String szinfile = (String) hmmarkcellfile.get(marksA[nmark]+"\t"+cellsA[ncell]);
 
 	        if (szinfile != null)
 		{
-
+		   String szsubdir = "";
+		   Object objsubdir = null;
+		   if ((objsubdir=   hmmarkcellsubdir.get(marksA[nmark]+"\t"+cellsA[ncell]))!= null)
+		       szsubdir = (String) objsubdir +"/";
+  
 		    //also means bmarkcell will be true
-		   brA[nmark][ncell] = Util.getBufferedReader(szinputdir+"/"+szchrom+"_"+szinfile+".wig.gz");
+		   brA[nmark][ncell] = Util.getBufferedReader(szinputdir+"/"+szsubdir+szchrom+"_"+szinfile+".wig.gz");
 
                    brA[nmark][ncell].readLine();
 	           brA[nmark][ncell].readLine();
@@ -7215,6 +7241,7 @@ public class ChromImpute
 	     String szcurrchrom = null;
 	     String szinfile = (String) hmmarkcellfile.get(markA[nmark]+"\t"+markcellA[nmark][ncell]);
 
+
 	     if ((szinfile.toLowerCase(Locale.ENGLISH).endsWith(".wig"))||
 	         (szinfile.toLowerCase(Locale.ENGLISH).endsWith(".wig.gz")))
              {
@@ -7449,8 +7476,28 @@ public class ChromImpute
 
 	     for (int ni = 0; ni < data.length; ni++)
 	     {
+
+	        String szsubdir = "";
+		Object objsubdir = null;
+	        if ((objsubdir=  hmmarkcellsubdir.get(markA[nmark]+"\t"+markcellA[nmark][ncell]))!= null)
+	        {
+		   szsubdir = (String) objsubdir +"/";
+		   //System.out.println("==>"+markA[nmark]+"\t"+markcellA[nmark][ncell]+"\t"+szsubdir);
+	           File f = new File(szoutdir+"/"+szsubdir);
+	           if (!f.exists())
+		   {
+		      if (!f.mkdirs())
+		      {
+		        //throw new IllegalArgumentException(szoutdir+" does not exist and could not be created!");
+		        System.out.println("ERROR: "+szoutdir+"/"+szsubdir+" does not exist and could not be created!");
+		        System.exit(1);
+		      }
+		   }
+		}
+
+
 	        GZIPOutputStream pw = new GZIPOutputStream(
-							   new FileOutputStream(szoutdir+"/"+alchrom.get(ni)+"_"+szinfile+".wig.gz"));
+							   new FileOutputStream(szoutdir+"/"+szsubdir+alchrom.get(ni)+"_"+szinfile+".wig.gz"));
 
 		String szheader = "track type=wiggle_0 name="+markcellA[nmark][ncell]+"_"+markA[nmark]+"_observed\n"+
                                   "fixedStep  chrom="+alchrom.get(ni)+" start=1 step="+nresolution+" span="+nresolution+"\n";
@@ -7537,8 +7584,13 @@ public class ChromImpute
 	  //System.out.println(szchrom+"\t"+alothercells.size()+"\t"+sztargetmark);
           for (int ni = 0; ni < alothercells.size(); ni++)
 	  {
+	      String szsubdir = "";
+	      Object objsubdir = null;
+	      if ((objsubdir=  hmmarkcellsubdir.get(sztargetmark+"\t"+alothercells.get(ni)))!= null)
+		  szsubdir = (String) objsubdir +"/";
+
              brothercells[ni] =
-		 Util.getBufferedReader(szinputdir+"/"+szchrom+"_"+hmmarkcellfile.get(sztargetmark+"\t"+alothercells.get(ni))+szextension);
+		 Util.getBufferedReader(szinputdir+"/"+szsubdir+szchrom+"_"+hmmarkcellfile.get(sztargetmark+"\t"+alothercells.get(ni))+szextension);
 
 	     brothercells[ni].readLine();
 	     brothercells[ni].readLine();
@@ -7677,16 +7729,27 @@ public class ChromImpute
 	  //System.out.println(szchrom+"\t"+alothercells.size());
           for (int ni = 0; ni < alothercells.size(); ni++)
 	  {
+	      String szsubdir = "";
+	      Object objsubdir = null;
+	      if ((objsubdir=  hmmarkcellsubdir.get(sztargetmark+"\t"+alothercells.get(ni)))!= null)
+		  szsubdir = (String) objsubdir +"/";
+	
+
 	      //theRecOtherCellA[ni] = new RecOtherCell();
               BufferedReader brothercells =
-		 Util.getBufferedReader(szinputdir+"/"+szchrom+"_"+hmmarkcellfile.get(sztargetmark+"\t"+alothercells.get(ni))+szextension);
+		 Util.getBufferedReader(szinputdir+"/"+szsubdir+szchrom+"_"+hmmarkcellfile.get(sztargetmark+"\t"+alothercells.get(ni))+szextension);
 
 	     brothercells.readLine();
 	     brothercells.readLine();
 	     theRecOtherCellA[ni].brothercells = brothercells;
 	  }
 
-          BufferedReader brtargetcell = Util.getBufferedReader(szinputdir+"/"+szchrom+"_"+
+          String szsubdir = "";
+	  Object objsubdir = null;
+          if ((objsubdir=   hmmarkcellsubdir.get(sztargetmark+"\t"+sztargetcell))!= null)
+	      szsubdir = (String) objsubdir +"/";
+
+          BufferedReader brtargetcell = Util.getBufferedReader(szinputdir+"/"+szsubdir+szchrom+"_"+
 							       hmmarkcellfile.get(sztargetmark+"\t"+sztargetcell)+szextension);
           brtargetcell.readLine();
           brtargetcell.readLine();
@@ -7894,7 +7957,7 @@ public class ChromImpute
 
 	if (szcommand.equalsIgnoreCase("Version"))
 	{
-	    System.out.println("This is version 1.0.4 of ChromImpute");
+	    System.out.println("This is version 1.0.5 of ChromImpute");
 	}
 	else if (szcommand.equalsIgnoreCase("ExportToChromHMM"))
 	{
