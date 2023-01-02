@@ -2,8 +2,12 @@ package ernst.ChromImpute;
 
 import java.io.*;
 import java.util.*;
-import java.util.zip.GZIPOutputStream;
+//import java.util.zip.GZIPOutputStream;
+import java.util.zip.*;//GZIPOutputStream;
 import java.text.*;
+import org.apache.commons.compress.archivers.tar.*;
+import org.apache.commons.compress.compressors.gzip.*;
+
 //import weka.core.matrix.*; //UNCOMMENT for linear regression uses external Weka package
                  
 public class ChromImpute
@@ -613,6 +617,11 @@ public class ChromImpute
      */
     boolean busenames;
 
+
+    /**
+     * contains name of a targzfile
+     */
+    String sztargzfile;
     ////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -1048,11 +1057,13 @@ public class ChromImpute
 		       boolean bprintbrowserheader, boolean bprintonefile,
 		       String szmethylheader, String szmethylinfo, String szmethylDIR,
 		       int nmaxoffsetnarrow,int nmaxoffsetwide,int nincrementnarrow,int nincrementwide, int nknnoffset,
-		       boolean bmethylavggenome, boolean bmethylavgchrom, boolean btieglobal, boolean bstd, String szoutfile_std
+		       boolean bmethylavggenome, boolean bmethylavgchrom, boolean btieglobal, boolean bstd, String szoutfile_std,
+		       String sztargzfile
 		       //String szmethylheader, String szmethylinfo, String szmethylDIR,
 		       //double dedgeval, double dmethylscale
                        ) throws Exception
     {
+	this.sztargzfile = sztargzfile;
 	this.nmaxknn = nmaxknn;
 	this.bdnamethyl = bdnamethyl;
 	this.bmethylavggenome = bmethylavggenome;
@@ -1666,6 +1677,11 @@ public class ChromImpute
 	  //computes the average methylation value
 	  for (int nk = 0; nk < methylavg.length; nk++)
           {
+	     if (methylcount[nk] == 0)
+	     {
+		 System.out.println("ERROR: a column has missing DNA values for all entries");
+		 System.exit(1);
+	     }	
 	     methylavg[nk] /= methylcount[nk];
 	     //System.out.println("methylavg "+nk+" "+methylavg[nk]);
 	  }	  
@@ -2537,6 +2553,7 @@ public class ChromImpute
 		       szsubdir = (String) objsubdir +"/";
 
 		   brA[nmark][ncell] = Util.getBufferedReader(szinputdir+"/"+szsubdir+szchrom+"_"+szinfile+".wig.gz");
+		   
 		   //brA[nmark][ncell] = Util.getBufferedReader(szinputdir+"/"+szchrom+"_"+szinfile+".wig.gz");
 
                    brA[nmark][ncell].readLine();
@@ -3034,6 +3051,10 @@ public class ChromImpute
        {
           throw new IllegalArgumentException(szoutmark+" was not found as mark!");
        }
+       if ((bdnamethyl)&&(ntargetmark>=0))
+       {
+          throw new IllegalArgumentException("-dnamethyl was specified but target mark "+szoutmark+" matches an input mark");
+       }
 
        /*
        if (szoutcell != null)//theTargetRec.szcell != null)
@@ -3513,14 +3534,48 @@ public class ChromImpute
      */
     public void loadFeatures(int nclassifierindex, String szattributefile) throws IOException
     {
-	BufferedReader br =  Util.getBufferedReader(szattributefile);
-	attributes[nclassifierindex] = new ArrayList();
-	String szLine;
-	while ((szLine = br.readLine())!=null)
+	if (sztargzfile == null)
 	{
-	    attributes[nclassifierindex].add(szLine);
+	   BufferedReader br =  Util.getBufferedReader(szattributefile);
+	   attributes[nclassifierindex] = new ArrayList();
+	   String szLine;
+	   while ((szLine = br.readLine())!=null)
+	   {
+              attributes[nclassifierindex].add(szLine);
+	   }
+	   br.close();
 	}
-	br.close();
+	else
+	{
+	   FileInputStream fileInputStream = new FileInputStream(sztargzfile);
+	   BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+	   GzipCompressorInputStream gzipInputStream = new GzipCompressorInputStream(bufferedInputStream);
+	   TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gzipInputStream);
+           TarArchiveEntry entry;
+	   while ((entry = (TarArchiveEntry) tarInputStream.getNextEntry()) != null)
+	   {
+              // Process the entry
+	      String szcurrFile = entry.getName();
+	      if (szattributefile.equals(szcurrFile))
+	      {
+	         BufferedReader br = new BufferedReader(new InputStreamReader(new GZIPInputStream(tarInputStream)));
+
+		 //BufferedReader br =  Util.getBufferedReader(szattributefile);
+		 attributes[nclassifierindex] = new ArrayList();
+		 String szLine;
+	         while ((szLine = br.readLine())!=null)
+	         {
+	           attributes[nclassifierindex].add(szLine);
+		 }
+		 br.close();
+		 tarInputStream.close();
+	         gzipInputStream.close();
+		 bufferedInputStream.close();
+		 fileInputStream.close();
+		 break;
+	      }
+	   }
+	}
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -4993,23 +5048,76 @@ public class ChromImpute
                    szFile = szclassifierdir+"/"+"classifier_"+szoutcell+"_"+szoutmark+"_"+nholdoutcell+"_"+nbag+".txt.gz";
 	        }
 
-	        File f = new File(szFile);
 
-	        if (f.exists())		      
-                {
-	           String szattributefile = szclassifierdir+"/"+"useattributes_"+szoutcell+"_"+szoutmark+"_"+nholdoutcell+"_"+nbag+".txt.gz";
-	           loadFeatures(nclassifierindex, szattributefile);
+		if (sztargzfile == null)
+		{
+	           File f = new File(szFile);
 
-		   if (BLINEAR)
-		   {		       
-		       theClassifierLinearA[nclassifierindex] = new RegressionLinear(Util.getBufferedReader(szFile));                      
-	           }
-	           else
-	           {
-	              theClassifierA[nclassifierindex] = new RegressionTree(Util.getBufferedReader(szFile));		
-	           }
-		   //increment total classifier count of available classifiers
-	           numclassifiers++;
+	           if (f.exists())		      
+                   {
+	              String szattributefile = szclassifierdir+"/"+"useattributes_"+szoutcell+"_"+szoutmark+"_"+nholdoutcell+"_"+nbag+".txt.gz";
+	              loadFeatures(nclassifierindex, szattributefile);
+
+		      //It does not look like brclassifiers were getting closed before; added for v1.0.5
+		      BufferedReader brclassifier = Util.getBufferedReader(szFile);
+		      if (BLINEAR)
+		      {		       
+			  //theClassifierLinearA[nclassifierindex] = new RegressionLinear(Util.getBufferedReader(szFile));                      
+			  theClassifierLinearA[nclassifierindex] = new RegressionLinear(brclassifier);
+		      }
+	              else
+	              {
+			  //theClassifierA[nclassifierindex] = new RegressionTree(Util.getBufferedReader(szFile));		
+			  theClassifierA[nclassifierindex] = new RegressionTree(brclassifier);
+		      }
+		      brclassifier.close();
+		      //increment total classifier count of available classifiers
+	              numclassifiers++;
+		   }
+		}
+		else
+		{
+
+		   FileInputStream fileInputStream = new FileInputStream(sztargzfile);
+		   BufferedInputStream bufferedInputStream = new BufferedInputStream(fileInputStream);
+		   GzipCompressorInputStream gzipInputStream = new GzipCompressorInputStream(bufferedInputStream);
+		   TarArchiveInputStream tarInputStream = new TarArchiveInputStream(gzipInputStream);
+
+		   TarArchiveEntry entry;
+		   while ((entry = (TarArchiveEntry) tarInputStream.getNextEntry()) != null)
+		   {
+		       // Process the entry
+		       String szcurrFile = entry.getName();
+		       if (szFile.equals(szcurrFile))
+		       {
+
+	                   String szattributefile = szclassifierdir+"/"+"useattributes_"+szoutcell+"_"+szoutmark+"_"+nholdoutcell+"_"+nbag+".txt.gz";
+	                   loadFeatures(nclassifierindex, szattributefile);
+
+			   BufferedReader brclassifier = new BufferedReader(new InputStreamReader(new GZIPInputStream(tarInputStream)));
+
+		           if (BLINEAR)
+		           {		       
+			       theClassifierLinearA[nclassifierindex] = new RegressionLinear(brclassifier);
+			       //Util.getBufferedReader(szFile));                      
+		           }
+	                   else
+	                   {
+	                       theClassifierA[nclassifierindex] = new RegressionTree(brclassifier);
+			       //Util.getBufferedReader(szFile));		
+		           }
+		           //increment total classifier count of available classifiers
+	                   numclassifiers++;
+
+			   brclassifier.close();
+			   tarInputStream.close();
+			   gzipInputStream.close();
+			   bufferedInputStream.close();
+			   fileInputStream.close();
+			   break;
+		       }
+		   }
+
 		}	     
 		nclassifierindex++; //increments the classifier index
 	     }
@@ -7473,6 +7581,11 @@ public class ChromImpute
 		}
 	        br.close();
 	     }
+	     else
+	     {
+		 System.out.println("ERROR: "+szinfile+" does not end in .bed, .bedgraph.gz, .wig, or .wig.gz");
+		 System.exit(1);		
+	     }
 
 	     for (int ni = 0; ni < data.length; ni++)
 	     {
@@ -8153,6 +8266,8 @@ public class ChromImpute
 	    boolean bmethylavgchrom = false;
 	    boolean btieglobal = false;
 	    boolean bstd =false;
+
+	    String sztargzfile = null;
 	    //String szchromwant = null;
 
 	   while (nargindex < args.length-8)
@@ -8273,6 +8388,10 @@ public class ChromImpute
 	      {
 		  btieglobal = true;
 	      }
+	      else if (szoption.equals("-targz"))
+	      {
+		 sztargzfile = args[nargindex++];
+	      }
 	      else
 	      {
 		 bok = false;
@@ -8325,7 +8444,7 @@ public class ChromImpute
 	   {
 	      System.out.println("USAGE: java ChromImpute Apply [-a mintotalensemble][-b numbags][-c chrom][-coeffv][-sampleonly][-dnamethyl infofile directory header]"+
                                  "[-i incrementnarrow incrementwide][-k maxknn][-markonly][-methylavggenome|-methylavgchrom][-n knnwindow]"+
-                                 "[-noprintbrowserheader][-o outputfile][-p selectedmarks][-printonefile][-r resolution][-std][-t outputfile_coeffv][-tieglobal][-w windownarrow windowwide] "+
+                                 "[-noprintbrowserheader][-o outputfile][-p selectedmarks][-printonefile][-r resolution][-std][-t outputfile_coeffv][-targz targzfile][-tieglobal][-w windownarrow windowwide] "+
                                  "CONVERTEDDIR DISTANCEDIR PREDICTORDIR inputinfofile chrominfo OUTPUTIMPUTEDIR sample mark");
 	      System.exit(1);
 
@@ -8341,7 +8460,7 @@ public class ChromImpute
 				                               szchromwant,bdnamethyl,nmintotalensemble,numbags,bprintbrowserheader,bprintonefile,
 				                               szmethylheader,szmethylinfo,szmethylDIR,
 				                               nmaxoffsetnarrow,nmaxoffsetwide,nincrementnarrow,nincrementwide, nknnoffset,
-				  bmethylavggenome, bmethylavgchrom, btieglobal,bstd, szoutfile_std);
+				  bmethylavggenome, bmethylavgchrom, btieglobal,bstd, szoutfile_std,sztargzfile);
 
 	      }
 	      catch (Exception ex)
