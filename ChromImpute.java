@@ -13,7 +13,7 @@ import org.apache.commons.compress.compressors.gzip.*;
 public class ChromImpute
 {
 
-    static int CLIPTHRESH = 500;
+    static int DEFAULT_CLIPTHRESH = 500;
 
     static int NUMLINES = 50000; //number of lines currently stored in memory
 
@@ -581,6 +581,11 @@ public class ChromImpute
 
     double devalpercent2;
 
+    /**
+     * Threshold for clipping signal in evaluation
+     */
+    double dclipthresh;
+
     private boolean BLINEAR = false;
     //private boolean BLINEAR = true; // linear regression not officially supported, weka calls to support it is commented out
     //flag should stay false unless changing the commented out code
@@ -978,7 +983,7 @@ public class ChromImpute
     public ChromImpute(String szevalobserveddir, String szevalobservedfile, String szevalimputedir,
 		       String szevalimputefile, String szchrominfo, double devalpercent1, 
                        double devalpercent2, boolean bprintbrowserheader,boolean bprintonefile,
-                       String szevaloutfile, String szpeakevalfile) throws IOException
+                       String szevaloutfile, String szpeakevalfile, double dclipthresh) throws IOException
     {
 	this.szevalobserveddir = szevalobserveddir;
 	this.szevalobservedfile = szevalobservedfile;
@@ -991,6 +996,7 @@ public class ChromImpute
 	this.bprintonefile = bprintonefile;
 	this.szevaloutfile = szevaloutfile;
 	this.szpeakevalfile = szpeakevalfile;
+	this.dclipthresh = dclipthresh;
 
 	loadChromInfo();
 
@@ -2731,7 +2737,7 @@ public class ChromImpute
 		       }
                        else
 		       {
-			   dstd = 0;
+			  dstd = 0;
 		       }
 
 		      szval_std = nmethylcoord+"\t"+nf.format(dstd)+"\n";
@@ -4786,14 +4792,14 @@ public class ChromImpute
 	     double dval1_clipped = dval1;
 	     double dval2_clipped = dval2;
 
-	     if (dval1 > CLIPTHRESH)
+	     if (dval1 > dclipthresh)//CLIPTHRESH)
 	     {
-		 dval1_clipped = CLIPTHRESH;
+		 dval1_clipped = dclipthresh;//CLIPTHRESH;
 	     }
 
-	     if (dval2 > CLIPTHRESH)
+	     if (dval2 > dclipthresh)
 	     {
-		 dval2_clipped = CLIPTHRESH;
+		 dval2_clipped = dclipthresh;//CLIPTHRESH;
 	     }
 	     
 	     dsumx_clipped += dval1_clipped;
@@ -4880,14 +4886,14 @@ public class ChromImpute
 		double dval1_clipped = dval1;
 		double dval2_clipped = dval2;
 
-	        if (dval1 > CLIPTHRESH)
+	        if (dval1 > dclipthresh)//CLIPTHRESH)
 	        {
-		   dval1_clipped = CLIPTHRESH;
+		    dval1_clipped = dclipthresh; //CLIPTHRESH;
 		}
 
-	        if (dval2 > CLIPTHRESH)
+	        if (dval2 > dclipthresh) //CLIPTHRESH)
 	        {
-		   dval2_clipped = CLIPTHRESH;
+		    dval2_clipped = dclipthresh; //CLIPTHRESH;
 		}
 
 		dsumx_clipped += dval1_clipped;
@@ -5049,7 +5055,7 @@ public class ChromImpute
        }
 
 
-       String szheaderline = "BOTH_"+devalpercent1+"\tIMPUTE_"+devalpercent1+"_OBSERVED_"+devalpercent2+"\tOBSERVED_"+devalpercent1+"_IMPUTE_"+devalpercent2+"\tCorrelation\t"+"IMPUTE_"+devalpercent1+"_AUC_PREDICT_OBSERVE\tOBSERVED_"+devalpercent1+"_AUC_PREDICT_IMPUTE\tCorrelation_CLIPPED_"+CLIPTHRESH;
+       String szheaderline = "BOTH_"+devalpercent1+"\tIMPUTE_"+devalpercent1+"_OBSERVED_"+devalpercent2+"\tOBSERVED_"+devalpercent1+"_IMPUTE_"+devalpercent2+"\tCorrelation\t"+"IMPUTE_"+devalpercent1+"_AUC_PREDICT_OBSERVE\tOBSERVED_"+devalpercent1+"_AUC_PREDICT_IMPUTE\tCorrelation_CLIPPED_"+dclipthresh;//CLIPTHRESH;
 
 
        String szoutputline = nf4.format(100*ntopmatchboth/(double) numtop1)+"\t"+nf4.format(100*ntopmatchimpute/(double) numtop1)+"\t"+
@@ -7644,7 +7650,7 @@ public class ChromImpute
 	     }
 	     else
 	     {
-		 System.out.println("ERROR: "+szinfile+" does not end in .bed, .bedgraph.gz, .wig, or .wig.gz");
+		 System.out.println("ERROR: "+szinfile+" does not end in .bedgraph, .bedgraph.gz, .wig, or .wig.gz");
 		 System.exit(1);		
 	     }
 
@@ -8619,6 +8625,7 @@ public class ChromImpute
 	   String szevaloutfile = null;
 	   String szpeakevalfile = null;
 
+	   double dclipthresh = ChromImpute.DEFAULT_CLIPTHRESH;
 	   double devalpercent1 = ChromImpute.DEFAULT_EVALPERCENT1;
 	   double devalpercent2 = ChromImpute.DEFAULT_EVALPERCENT2;
 	   boolean bprintbrowserheader = true;
@@ -8628,7 +8635,11 @@ public class ChromImpute
 	   {
                szoption = args[nargindex++];
 
-	      if (szoption.equals("-o"))
+	      if (szoption.equals("-c"))
+	      {
+		  dclipthresh = Double.parseDouble(args[nargindex++]);
+	      }
+	      else if (szoption.equals("-o"))
 	      {
 		  szevaloutfile = args[nargindex++];
 	      }
@@ -8666,7 +8677,7 @@ public class ChromImpute
 
            if (!bok)
 	   {
-	       System.out.println("USAGE: java ChromImpute Eval [-f peakevalfile][-noprintbrowserheader][-o outfile][-p percent1 percent2][-printonefile] CONVERTEDDIR ConvertedFile IMPUTEDIR ImputeFile chrominfo");
+	       System.out.println("USAGE: java ChromImpute Eval [-c clipthresh][-f peakevalfile][-noprintbrowserheader][-o outfile][-p percent1 percent2][-printonefile] CONVERTEDDIR ConvertedFile IMPUTEDIR ImputeFile chrominfo");
 	       System.exit(1);
 	   }
 	   else
@@ -8674,7 +8685,7 @@ public class ChromImpute
               try
 	      {
 		  new ChromImpute(szevalobserveddir, szevalobservedfile, szevalimputedir, szevalimputefile, szchrominfo, 
-                                  devalpercent1, devalpercent2, bprintbrowserheader, bprintonefile, szevaloutfile,szpeakevalfile);
+                                  devalpercent1, devalpercent2, bprintbrowserheader, bprintonefile, szevaloutfile,szpeakevalfile, dclipthresh);
 	      }
               catch (Exception ex)
 	      {

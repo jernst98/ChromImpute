@@ -1,0 +1,53 @@
+ChromImpute Version Log
+Version 1.0.5 Released January 1, 2024
+* Added the ability to have input files be present in different subdirectories, which can be
+specified with fourth column entries to inputinfofile
+* Added the ability for Apply to read predictors stored in a .tar.gz file through the -targz option
+* Added outputting pearson correlations that clip outlier values to 500 or the value of clipthresh if the option -c clipthresh is specified
+* Added throwing an error if an input DNA methylation data set has missing values for every entry
+* Added throwing an error if an input signal file to convert does not end in .bedgraph, .bedgraph.gz, .wig, or .wig.gz
+* Added throwing an error if -dnamethyl is a flag provided to Train specifying DNA methylation is the target, but 'mark' matches an input mark. 
+'mark' should be the name to be given to DNA methylation
+
+Version 1.0.4 Internal release only
+*Added -coeffv and -t flags to Apply command for outputting coefficient of variation values
+
+Version 1.0.3 Released December 31, 2017
+*Added the ExportToChromHMM command
+
+Version 1.0.2 Released August 19, 2017
+*Fixed bug causing ChromImpute not to work with default Java locales that use commas
+instead of periods for decimal marks. Now Locale.ENGLISH is used for all number formatting.
+
+Version 1.0.1 Released October 16, 2016
+*Fixed bug in Train command that caused it to reject commands with the '-k maxknn' option 
+
+Version 1.0.0 Released September 4, 2015
+*Fixed bugs in the Convert command that caused it to not
+handle 'track' lines in wig files and also cases in which chromosome lengths
+were evenly divisible by the bin resolution
+
+Version 0.9.9 Released July 5, 2015
+*Minor update to catch all Exceptions with the convert command in order to return 1 for all types of failures
+
+Version 0.9.8 Released July 4, 2015
+*Added return codes to ChromImpute so that 0 means succesful execution and 1 means some type of failure
+*Fixed bug causing not all files to be closed when done being read when calling GenerateTrainData
+on multiple chromosomes.
+*Relaxed the checks on float point instability to be values less than -100 when expecting non-negative values
+*Clarified in the manual when running wigToBigWig on wig files generated from ChromImpute
+that the '-clip' option should be added
+
+
+Version 0.9.6 Released March 29, 2015
+*Fixed bug previously preventing mark names containing an underscore ('_')
+from being processed properly
+*Fixed inconsistencies with regard to the '-a mintotalensemble'
+that could have the numbags be one off than intended
+*Added additional error checking and more informative
+error messages in places such as checking if the data to the Convert
+is actually in wig or bedgraph command and checking if predictors
+have been trained already before applying the Apply command.
+*Minor internal code changes intended to improve performance
+
+Version 0.9.5 Released February 18, 2015
