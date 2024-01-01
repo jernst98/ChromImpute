@@ -13,6 +13,7 @@ import org.apache.commons.compress.compressors.gzip.*;
 public class ChromImpute
 {
 
+    static int CLIPTHRESH = 500;
 
     static int NUMLINES = 50000; //number of lines currently stored in memory
 
@@ -4692,6 +4693,13 @@ public class ChromImpute
        double dsumysq = 0;
        double dsumxy = 0;
 
+
+       double dsumx_clipped = 0;
+       double dsumy_clipped = 0;
+       double dsumxsq_clipped = 0;
+       double dsumysq_clipped = 0;
+       double dsumxy_clipped = 0;
+
        HashMap hmROCRecImpute = new HashMap();
        HashMap hmROCRecReal = new HashMap();
 
@@ -4775,6 +4783,26 @@ public class ChromImpute
              dsumysq += dval2*dval2;
              dsumxy += dval1*dval2;
 
+	     double dval1_clipped = dval1;
+	     double dval2_clipped = dval2;
+
+	     if (dval1 > CLIPTHRESH)
+	     {
+		 dval1_clipped = CLIPTHRESH;
+	     }
+
+	     if (dval2 > CLIPTHRESH)
+	     {
+		 dval2_clipped = CLIPTHRESH;
+	     }
+	     
+	     dsumx_clipped += dval1_clipped;
+	     dsumxsq_clipped += dval1_clipped * dval1_clipped;
+	     dsumy_clipped += dval2_clipped;
+             dsumysq_clipped += dval2_clipped*dval2_clipped;
+             dsumxy_clipped += dval1_clipped*dval2_clipped;
+
+
 	     //if (dval2 >= dkeepimpute)
 	     //{
 	        //stores imputed
@@ -4849,6 +4877,25 @@ public class ChromImpute
 	        dsumysq += dval2*dval2;
 	        dsumxy += dval1*dval2;
 
+		double dval1_clipped = dval1;
+		double dval2_clipped = dval2;
+
+	        if (dval1 > CLIPTHRESH)
+	        {
+		   dval1_clipped = CLIPTHRESH;
+		}
+
+	        if (dval2 > CLIPTHRESH)
+	        {
+		   dval2_clipped = CLIPTHRESH;
+		}
+
+		dsumx_clipped += dval1_clipped;
+		dsumxsq_clipped += dval1_clipped * dval1_clipped;
+		dsumy_clipped += dval2_clipped;
+		dsumysq_clipped += dval2_clipped*dval2_clipped;
+		dsumxy_clipped += dval1_clipped*dval2_clipped;
+
 		// if (dval2 >= dkeepimpute)
 	        //{
 		    //stores imputed
@@ -4922,6 +4969,20 @@ public class ChromImpute
 	}
 
 
+	double dcorr_clipped;
+	double dvarx_clipped = dsumxsq_clipped - dsumx_clipped*dsumx_clipped/nlinereal;
+	double dvary_clipped = dsumysq_clipped - dsumy_clipped*dsumy_clipped/nlinereal;
+	double dvarxdvary_clipped = dvarx_clipped*dvary_clipped;
+	if (dvarxdvary_clipped <= 0)
+	{
+	   dcorr_clipped = 0;
+        }
+	else
+	{
+           dcorr_clipped = (dsumxy_clipped - dsumx_clipped*dsumy_clipped/nlinereal)/Math.sqrt(dvarxdvary_clipped);
+	}
+
+
        Iterator itr = hmROCRecImpute.keySet().iterator();
        double[] keys = new double[hmROCRecImpute.size()];
        int nkey = 0;
@@ -4988,12 +5049,12 @@ public class ChromImpute
        }
 
 
-       String szheaderline = "BOTH_"+devalpercent1+"\tIMPUTE_"+devalpercent1+"_OBSERVED_"+devalpercent2+"\tOBSERVED_"+devalpercent1+"_IMPUTE_"+devalpercent2+"\tCorrelation\t"+
-	   "IMPUTE_"+devalpercent1+"_AUC_PREDICT_OBSERVE\tOBSERVED_"+devalpercent1+"_AUC_PREDICT_IMPUTE";
+       String szheaderline = "BOTH_"+devalpercent1+"\tIMPUTE_"+devalpercent1+"_OBSERVED_"+devalpercent2+"\tOBSERVED_"+devalpercent1+"_IMPUTE_"+devalpercent2+"\tCorrelation\t"+"IMPUTE_"+devalpercent1+"_AUC_PREDICT_OBSERVE\tOBSERVED_"+devalpercent1+"_AUC_PREDICT_IMPUTE\tCorrelation_CLIPPED_"+CLIPTHRESH;
 
 
        String szoutputline = nf4.format(100*ntopmatchboth/(double) numtop1)+"\t"+nf4.format(100*ntopmatchimpute/(double) numtop1)+"\t"+
-	   nf4.format(100*ntopmatchreal/(double) numtop1)+"\t"+nf4.format(dcorr)+"\t"+nf4.format(dauctopimpute)+"\t"+nf4.format(dauctopreal);
+	   nf4.format(100*ntopmatchreal/(double) numtop1)+"\t"+nf4.format(dcorr)+"\t"+nf4.format(dauctopimpute)+"\t"+nf4.format(dauctopreal)
+	   +"\t"+nf4.format(dcorr_clipped);
 
        if (szevaloutfile == null)
        {
@@ -8444,7 +8505,7 @@ public class ChromImpute
 	   {
 	      System.out.println("USAGE: java ChromImpute Apply [-a mintotalensemble][-b numbags][-c chrom][-coeffv][-sampleonly][-dnamethyl infofile directory header]"+
                                  "[-i incrementnarrow incrementwide][-k maxknn][-markonly][-methylavggenome|-methylavgchrom][-n knnwindow]"+
-                                 "[-noprintbrowserheader][-o outputfile][-p selectedmarks][-printonefile][-r resolution][-std][-t outputfile_coeffv][-targz targzfile][-tieglobal][-w windownarrow windowwide] "+
+                                 "[-noprintbrowserheader][-o outputfile][-p selectedmarks][-printonefile][-r resolution][-t outputfile_coeffv][-targz targzfile][-tieglobal][-w windownarrow windowwide] "+
                                  "CONVERTEDDIR DISTANCEDIR PREDICTORDIR inputinfofile chrominfo OUTPUTIMPUTEDIR sample mark");
 	      System.exit(1);
 
