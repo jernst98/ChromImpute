@@ -3,11 +3,12 @@ Version 1.0.5 Released January 1, 2024
 * Added the ability to have input files be present in different subdirectories, which can be
 specified with fourth column entries to inputinfofile
 * Added the ability for Apply to read predictors stored in a .tar.gz file through the -targz option
-* Added outputting pearson correlations that clip outlier values to 500 or the value of clipthresh if the option -c clipthresh is specified
+* Added to Eval outputting pearson correlations that clip outlier values to 500 or the value of clipthresh if the option -c clipthresh is specified
 * Added throwing an error if an input DNA methylation data set has missing values for every entry
 * Added throwing an error if an input signal file to convert does not end in .bedgraph, .bedgraph.gz, .wig, or .wig.gz
 * Added throwing an error if -dnamethyl is a flag provided to Train specifying DNA methylation is the target, but 'mark' matches an input mark. 
 'mark' should be the name to be given to DNA methylation
+* Now compiled to target a minimum of Java 1.7 from 1.6
 
 Version 1.0.4 Internal release only
 *Added -coeffv and -t flags to Apply command for outputting coefficient of variation values
